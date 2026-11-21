@@ -53,6 +53,10 @@ Regles de consultation, dans l'ordre impose par le skill :
 1. Lire `design-system/quick-commerce-cotonou/MASTER.md`.
 2. Pour une page precise, chercher `design-system/quick-commerce-cotonou/pages/<page>.md`.
    S'il existe, **il prime** sur le Master. Sinon, appliquer le Master seul.
+   Disponibles aujourd'hui : `pages/landing.md`, `pages/checkout.md`.
+   Le mecanisme `--page` du skill ne genere qu'une **ebauche identique pour toutes les pages**
+   (verifie par diff) : ces deux fichiers ont ete authorés, pas seulement generes. Ne pas les
+   ecraser avec `--page ... --force`.
 3. `design-system/quick-commerce-cotonou/globals.css` contient les tokens prets a copier vers
    `app/globals.css`. Il compile sous Tailwind v4.3.5 — ne pas le reecrire a la main.
 

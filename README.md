@@ -62,6 +62,10 @@ beninois), stack **Next.js + shadcn/ui + Tailwind v4**.
   entre la sortie brute du generateur et ce fichier.
 - `globals.css` — tokens prets a copier vers `app/globals.css`. Compile sous Tailwind v4.3.5 ;
   les 15 utilitaires de couleur/typo/rayon et les 8 classes composants sont verifies generes.
+- `pages/landing.md` et `pages/checkout.md` — overrides par page. **Ils priment sur le Master.**
+  Composes a partir de patterns reels de `landing.csv` (`marketplace-directory` pour la structure,
+  `funnel-3-step-conversion` pour le bloc pedagogique, `trust-authority-conversion` conserve pour
+  ses seules exigences carrousel) et des guidelines du domaine `ux`, citees avec leur severite.
 
 Genere avec :
 
