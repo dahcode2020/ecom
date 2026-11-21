@@ -38,8 +38,19 @@ export const viewport: Viewport = {
  * les stockages sont bloques. Une echec ne doit jamais casser la page.
  *
  * La cle `qcc-theme` doit rester identique a celle de components/theme-toggle.tsx.
+ *
+ * Il pose AUSSI la classe `js` sur <html>, et c'est la condition qui autorise
+ * l'etat masque du scroll reveal (`components/scroll-reveal.tsx` et le bloc 3 de
+ * globals.css). Sans JavaScript cette classe n'existe pas, donc rien n'est
+ * masque : c'est le repli no-JS exige par la recette 4 de motion.csv
+ * (« Don't reveal below-the-fold content ... as invisible-by-default WITHOUT A
+ * NO-JS FALLBACK »).
+ *
+ * `classList.add('js')` est place AVANT le try/catch, et non dedans : un echec
+ * de localStorage (navigation privee) ne doit surtout pas empecher le theme ni
+ * le reveal de s'initialiser.
  */
-const themeInitScript = `(function(){try{var s=localStorage.getItem('qcc-theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);}catch(e){}})();`;
+const themeInitScript = `(function(){var r=document.documentElement;r.classList.add('js');try{var s=localStorage.getItem('qcc-theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;r.classList.toggle('dark',d);}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -50,6 +61,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Quatrieme repli du scroll reveal : meme si la classe `js` avait ete
+            posee puis le script principal echoue, le contenu redevient visible.
+            `!important` est necessaire pour battre la specificite de
+            `.js [data-reveal]`. */}
+        <noscript>
+          <style>{`[data-reveal]{opacity:1 !important;transform:none !important;}`}</style>
+        </noscript>
       </head>
       {/* Pas de classe font-* ici : globals.css applique les familles via
           @layer base sur body et les titres. */}

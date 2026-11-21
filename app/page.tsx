@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { SiteHeader, MobileCtaBar } from '@/components/site-header';
+import { ScrollReveal } from '@/components/scroll-reveal';
 import {
   Categories,
   CategorySections,
@@ -8,6 +9,7 @@ import {
   HowItWorks,
   PopularProducts,
   ProofBand,
+  Showcase,
 } from '@/components/landing-sections';
 import { demoCartCount, demoCartSubtotal } from '@/lib/data';
 import { formatXOF } from '@/lib/format';
@@ -24,11 +26,28 @@ import { SUPPORT_WHATSAPP, SUPPORT_TEL } from '@/lib/contact';
  *   vehicule des donnees personnelles et de paiement. Le stub genere par le
  *   skill donnait le meme conseil de cache aux deux pages — erreur corrigee.
  *
- * AUCUNE librairie d'animation : le scroll reveal GSAP du Master est
- * volontairement NON utilise sur cette page. Le Master avertit deja qu'il ne
- * faut pas masquer du contenu indexable a opacity:0 sans repli sans JS, et
- * c'est precisement la page d'indexation. Tout est rendu cote serveur, visible
- * sans JavaScript.
+ * MOUVEMENT — position revisee, et pourquoi.
+ *
+ * La version initiale de cette page n'avait AUCUNE animation (0 @keyframes dans
+ * tout le design system, 4 `animate-spin` purement fonctionnels). Le rendu a ete
+ * juge basique a juste titre. Les recettes 4 et 5 de motion.csv sont donc
+ * appliquees via `components/scroll-reveal.tsx`.
+ *
+ * GSAP reste ecarte (~70 Ko) : les memes courbes et durees sont portees par des
+ * tokens CSS (`--ease-*`, `--dur-*`), pour zero octet de dependance.
+ *
+ * L'exigence du skill n'est pas « pas de reveal », c'est « pas de contenu
+ * indexable masque SANS REPLI no-JS » (recette 4, DON'T). Quatre replis sont en
+ * place, dont trois independants de JavaScript :
+ *   1. l'etat masque vit dans `.js [data-reveal]`, et la classe `js` n'existe
+ *      que si le script bloquant du <head> a tourne ;
+ *   2. un <noscript> remet opacity: 1 en `!important` ;
+ *   3. `prefers-reduced-motion: reduce` neutralise tout, etat final inclus ;
+ *   4. cote client, IntersectionObserver absent OU reduced-motion => tout est
+ *      revele immediatement.
+ *
+ * Le HERO ne porte volontairement PAS `data-reveal` : c'est le LCP et le contenu
+ * indexable principal, il ne doit dependre d'aucun observer.
  */
 export const revalidate = 60;
 
@@ -47,6 +66,11 @@ export default function LandingPage() {
       <SiteHeader variant="landing" cartCount={demoCartCount} />
 
       {/* `id="top"` : cible du mini-CTA de l'etape 1. */}
+      {/* Montee ici et non dans le layout : le catalogue se re-rend au fil des
+          filtres, et un observer monte une seule fois ne verrait jamais ses
+          nouveaux noeuds. Chaque page decide donc de son propre reveal. */}
+      <ScrollReveal />
+
       <main id="contenu">
         <span id="top" />
 
@@ -55,6 +79,9 @@ export default function LandingPage() {
         <Hero />
         <Categories />
         <PopularProducts />
+        {/* Vitrine bento avec les visuels generes : placee sous la ligne de
+            flottaison, donc en lazy-load — aucun effet sur le LCP. */}
+        <Showcase />
         <HowItWorks />
         <CategorySections />
         <ProofBand />

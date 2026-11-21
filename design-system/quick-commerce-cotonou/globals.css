@@ -138,6 +138,20 @@
 .dark {
   color-scheme: dark;
 
+  /* Tuile inversee en mode sombre : le fond devient clair, donc les accents
+     doivent devenir FONCES. Verifies sur #E8F5EC :
+       texte principal  #0C1A12 = 15.96:1  AAA
+       texte secondaire #1F5C3A =  7.06:1  AAA
+       accent           #166534 =  6.35:1  AA
+     --primary #22C55E ne donnerait que 2.94:1 ici : c'est exactement pourquoi
+     ces tokens sont separes et non pas de simples references aux tokens
+     principaux. */
+  --inverted-bg: #e8f5ec;
+  --inverted-fg: #0c1a12;
+  --inverted-muted: #1f5c3a;
+  --inverted-accent: #166534;
+  --inverted-border: #15803d;
+
   --background: #0c1a12;             /* vs foreground : 15.96:1 */
   --foreground: #e8f5ec;
   --card: #12241a;                   /* vs foreground : 14.47:1 */
@@ -396,5 +410,469 @@
      reste que la ou l'elevation porte une information fonctionnelle. */
   .overlay {
     box-shadow: 0 10px 15px rgb(0 0 0 / 0.1);
+  }
+}
+
+/* ================================================================== */
+/*  AMENDEMENT — DIRECTION VISUELLE « BENTO EDITORIAL PREMIUM »        */
+/* ================================================================== */
+/*
+ * Ajoute apres coup, a la demande : le rendu initial (Flat Design seul,
+ * --variance non utilise) etait juge trop basique. Diagnostic mesure qui
+ * justifie l'amendement : 0 @keyframes, 5 transitions, aucune animation
+ * expressive (les 4 `animate-*` etaient des spinners fonctionnels), h1
+ * majoritairement en 30px, aucune asymetrie, aucune image.
+ *
+ * Quatre styles du catalogue `styles.csv` sont combines. Tous sont
+ * cost:low / risk:low ou nativ, Mobile adaptable ou nativ, Conversion
+ * High a Very High :
+ *
+ *   Bento Box Grid        (Low,  cost:low, risk:low, adapt, High)
+ *   Hero-Centric Design   (Med,  cost:low, risk:low, nativ, VERY High)
+ *   Bold Typography       (Med,  cost:low, risk:c,   nativ, High)
+ *   Micro-interactions    (Med,  cost:low, risk:low, adapt, High)
+ *
+ * Ecartes volontairement, avec la raison lue dans la colonne « Do Not Use For » :
+ *   Neubrutalism, Claymorphism, Vibrant & Block-based -> « healthcare »,
+ *     or ce site a un rayon pharmacie delivrant sous ordonnance.
+ *   Aurora UI / Gradient Mesh -> « critical accessibility, content-heavy ».
+ *   Swiss Modernism 2.0 / Exaggerated Minimalism -> plus minimal encore,
+ *     soit l'inverse de ce qui est demande.
+ *   3D & Hyperrealism, Skeuomorphism, Parallax Storytelling -> cost:high,
+ *     interdit sur la cible 3G/4G instable.
+ *
+ * Le Flat Design n'est pas ABANDONNE : il reste la base (aplats, pas de flou,
+ * separation par fond et bordure). Ce qui change est l'ossature — grille
+ * asymetrique, echelle typographique affirmee, profondeur par couches, et une
+ * vraie couche de mouvement.
+ */
+
+/* ------------------------------------------------------------------ */
+/*  AMENDEMENT a la correction n°7 (ombres reservees aux flottants)    */
+/* ------------------------------------------------------------------ */
+/*
+ * Bento Box Grid demande explicitement « Shadows subtle » et « hover scale
+ * (1.02) ». La regle initiale interdisait toute ombre hors calque flottant.
+ * Conflit tranche en faveur d'une ombre TRES legere, uniquement sur les tuiles
+ * bento interactives, et uniquement au survol — au repos la separation reste
+ * assuree par le fond et la bordure, comme avant. L'information fonctionnelle
+ * portee par l'ombre reste donc nulle au repos : la regle d'origine est
+ * preservee dans son intention, pas dans sa lettre absolue.
+ */
+
+/* ------------------------------------------------------------------ */
+/*  1. TOKENS DE MOUVEMENT — traduits des 17 recettes de motion.csv    */
+/* ------------------------------------------------------------------ */
+/*
+ * Les recettes donnent trigger / duree / easing en vocabulaire GSAP
+ * (`power1.out`, `back.out(1.4)`, `expo.out`). GSAP pese ~70 Ko et
+ * pages/landing.md l'ecarte ; les memes courbes sont donc exprimees en
+ * `cubic-bezier`, sans dependance.
+ *
+ * Chaque token cite la recette dont il provient, pour rester tracable.
+ */
+:root {
+  /* Recette 1 — Hover Micro-interaction [Subtle] : 150-200ms power1.out */
+  --ease-power1-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --dur-micro: 180ms;
+
+  /* Recette 2 — Hover Micro-interaction [Standard] : 200-300ms power2.out */
+  --ease-power2-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --dur-hover: 260ms;
+
+  /* Recette 8 — Stagger List [Standard] : 300-450ms back.out(1.4)
+     Reserve aux tuiles bento de la LANDING. Interdit sur grille dense :
+     « Don't use back.out on dense data tables; the overshoot reads as sloppy
+     on informational UI » — donc jamais sur le catalogue (30 produits). */
+  --ease-back-out: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-stagger: 380ms;
+  /* Recette 7 — delai par element 20-40ms au-dela de 10 items */
+  --stagger-step: 30ms;
+
+  /* Recette 4/5 — Scroll Reveal : 300-400ms power1.out, decalage y 8-16px */
+  --reveal-offset: 12px;
+
+  /* Recette 9 — expo.out, reserve aux titres courts (< ~8 mots) */
+  --ease-expo-out: cubic-bezier(0.19, 1, 0.22, 1);
+
+  /* Recette 10 — Page Transition [Subtle] : 200-300ms power1.inOut */
+  --ease-power1-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  --dur-route: 240ms;
+
+  /* Recette 15 — Skeleton : boucle 1200-1600ms sine.inOut */
+  --ease-sine-in-out: cubic-bezier(0.445, 0.05, 0.55, 0.95);
+  --dur-shimmer: 1400ms;
+
+  /* Ombre tres legere, survol des tuiles bento uniquement (voir plus haut) */
+  --shadow-bento: 0 6px 20px rgb(20 83 45 / 0.08);
+  --shadow-bento-dark: 0 6px 20px rgb(0 0 0 / 0.35);
+
+  /* -------------------------------------------------------------- */
+  /* Tuile INVERSEE — le geste editorial fort du hero bento.          */
+  /* ----------------------------------------------------------------
+   * Fond = --foreground, texte = --background : l'inversion suit donc
+   * automatiquement le theme. Mais les ACCENTS ne peuvent pas suivre :
+   * mesures a plat, --secondary et --accent s'effondrent sur ce fond.
+   *
+   *   --secondary #22C55E sur #14532D = 4.00:1  INSUFFISANT pour du texte
+   *   --accent    #0369A1 sur #14532D = 1.54:1  INTERDIT
+   *   --primary   #15803D sur #14532D = 1.82:1  un bouton primaire y serait
+   *                                            quasi invisible
+   *
+   * D'ou ces tokens dedies, chacun verifie au dixieme :
+   *   texte principal  #F0FDF4 sur #14532D = 8.70:1  AAA
+   *   texte secondaire #BBF7D0 sur #14532D = 7.52:1  AAA
+   *   accent           #86EFAC sur #14532D = 6.49:1  AA
+   *   bordure          #22C55E sur #14532D = 4.00:1  separateur decoratif,
+   *                                                 jamais du texte
+   */
+  --inverted-bg: #14532d;
+  --inverted-fg: #f0fdf4;
+  --inverted-muted: #bbf7d0;
+  --inverted-accent: #86efac;
+  --inverted-border: #22c55e;
+}
+
+.dark {
+  --shadow-bento: var(--shadow-bento-dark);
+}
+
+/* ------------------------------------------------------------------ */
+/*  2. KEYFRAMES                                                       */
+/* ------------------------------------------------------------------ */
+@keyframes qcc-shimmer {
+  /* Recette 15 DO : « Use a CSS gradient background-position sweep rather than
+     opacity pulsing; reads as 'loading' more clearly ». */
+  from { background-position: -150% 0; }
+  to   { background-position: 250% 0; }
+}
+
+@keyframes qcc-rise {
+  /* Entree des tuiles bento. Recette 8 : staggered scale + rise. */
+  from { opacity: 0; transform: translate3d(0, var(--reveal-offset), 0) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes qcc-float {
+  /* Nappe decoratoire du hero, boucle 8-12s (recette Aurora, reprise ici en
+     tres subtil puisque le style Aurora lui-meme a ete ecarte). */
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -10px, 0); }
+}
+
+@keyframes qcc-pop {
+  /* Feedback de succes : le « pop » d'une confirmation. < 300ms. */
+  0%   { transform: scale(0.9); opacity: 0; }
+  60%  { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes qcc-pulse-ring {
+  /* Halo du marqueur coursier (suivi). S'arrete si reduced-motion. */
+  0%   { transform: scale(0.85); opacity: 0.55; }
+  70%  { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* ------------------------------------------------------------------ */
+/*  3. SCROLL REVEAL — avec TRIPLE repli, jamais de contenu perdu      */
+/* ------------------------------------------------------------------ */
+/*
+ * Recette 4 DON'T : « Don't reveal below-the-fold content needed for
+ * SEO/crawlers as invisible-by-default WITHOUT A NO-JS FALLBACK ».
+ *
+ * L'etat masque n'est donc jamais le defaut. Il faut TOUTES ces conditions :
+ *   1. la classe `js` sur <html>, posee par le script bloquant — sans
+ *      JavaScript, rien n'est masque ;
+ *   2. `prefers-reduced-motion: no-preference` — l'utilisateur qui demande
+ *      moins de mouvement voit tout immediatement ;
+ *   3. IntersectionObserver disponible — sinon le composant revele tout.
+ * Un bloc <noscript> dans le layout remet opacity: 1 en dernier recours.
+ *
+ * pages/landing.md est aligne sur cette formulation : la regle du skill
+ * n'interdit pas le reveal, elle exige un repli.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .js [data-reveal] {
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-offset), 0);
+  }
+  .js [data-reveal].is-revealed {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--dur-stagger) var(--ease-power2-out),
+      transform var(--dur-stagger) var(--ease-power2-out);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  4. GRILLE BENTO — spans asymetriques, responsive 4 -> 2 -> 1       */
+/* ------------------------------------------------------------------ */
+/*
+ * Checklist du style : « Grid responsive (4->2->1 cols), Card spans varied,
+ * Rounded corners consistent, Shadows subtle, Content fits cards,
+ * Hover scale (1.02) ».
+ */
+@layer components {
+  .bento {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--tap-gap);
+  }
+  @media (min-width: 640px) {
+    .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  }
+  @media (min-width: 1024px) {
+    .bento { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  }
+
+  /* Spans varies : c'est l'asymetrie qui cree l'interet visuel. Sur une seule
+     colonne, chaque span retombe a 1 pour ne jamais deborder. */
+  .bento-2x1 { grid-column: span 1; }
+  .bento-2x2 { grid-column: span 1; }
+  .bento-3x2 { grid-column: span 1; }
+  .bento-1x2 { grid-row: span 1; }
+  @media (min-width: 640px) {
+    .bento-2x1 { grid-column: span 2; }
+    .bento-2x2 { grid-column: span 2; grid-row: span 2; }
+    .bento-3x2 { grid-column: span 2; grid-row: span 2; }
+    .bento-1x2 { grid-row: span 2; }
+  }
+  @media (min-width: 1024px) {
+    .bento-2x1 { grid-column: span 2; grid-row: span 1; }
+    .bento-2x2 { grid-column: span 2; grid-row: span 2; }
+    .bento-3x2 { grid-column: span 3; grid-row: span 2; }
+  }
+
+  /* Tuile bento : rayon 16px (le style demande 16-24px, l'echelle existante
+     s'arretait a 12px), ombre uniquement au survol. */
+  .bento-tile {
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background-color: var(--card);
+    overflow: hidden;
+    position: relative;
+    transition:
+      transform var(--dur-hover) var(--ease-power2-out),
+      box-shadow var(--dur-hover) var(--ease-power2-out),
+      border-color var(--dur-hover) var(--ease-power2-out);
+  }
+
+  /* Recette 2 DO : « Pair with a matching mouseleave tween that reverses the
+     same properties » — en CSS, :hover/:not(:hover) est symetrique par
+     construction, donc rien ne reste bloque si le pointeur sort vite.
+     Recette 1 DO : deplacement < 2px pour le micro-feedback ; ici le scale
+     1.02 demande par le style Bento reste inferieur a 2px de deformation
+     percue sur une tuile de ~300px seulement si l'on translate peu : on
+     combine un scale modere et AUCUN translateY au survol. */
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .bento-tile-interactive:hover {
+      transform: scale(1.02);
+      box-shadow: var(--shadow-bento);
+      border-color: var(--border-strong);
+    }
+    .bento-tile-interactive:active {
+      transform: scale(0.995);
+      transition-duration: var(--dur-micro);
+    }
+  }
+
+  /* Boutons : micro-interaction recette 1 (< 2px) + etat presse.
+     `@media (hover: hover)` evite un etat survol colle au doigt sur mobile. */
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .btn-primary,
+    .btn-outline {
+      transition:
+        background-color var(--dur-micro) var(--ease-power1-out),
+        border-color var(--dur-micro) var(--ease-power1-out),
+        transform var(--dur-micro) var(--ease-power1-out),
+        box-shadow var(--dur-micro) var(--ease-power1-out);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-bento); }
+    .btn-outline:hover { transform: translateY(-1px); }
+    .btn-primary:active,
+    .btn-outline:active { transform: translateY(0.5px) scale(0.99); }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  5. ECHELLE TYPOGRAPHIQUE AFFIRMEE (Bold Typography)              */
+  /* ---------------------------------------------------------------- */
+  /*
+   * Checklist : « H1 at least 4-5x body size », « tight tracking »,
+   * « massive vertical spacing ». Corps a 16px -> h1 de landing a 64-72px
+   * sur desktop (4,5x), 40px sur mobile (2,5x : en dessous de 375px, 4,5x
+   * ferait deborder les titres, ce que le style interdit aussi —
+   * « Text bleeds to/over screen edges » est reserve aux affiches).
+   * Le tracking serre (-0.02 a -0.03em) est ce qui donne le plus l'impression
+   * de « haut de gamme », pour zero octet.
+   */
+  .display {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    line-height: 1.03;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+    font-size: clamp(2.25rem, 1.4rem + 4.2vw, 4.25rem);
+  }
+  .display-sm {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    font-size: clamp(1.6rem, 1.2rem + 1.9vw, 2.5rem);
+  }
+  /* Accroche de section : grande mais lisible, `pretty` evite une veuve. */
+  .lede {
+    font-size: clamp(1.05rem, 0.98rem + 0.4vw, 1.3rem);
+    line-height: 1.55;
+    text-wrap: pretty;
+  }
+  /* Chiffre mis en avant (preuve, delai, prix) : le contraste de taille est
+     un outil de hierarchie, pas de decoration. */
+  .stat {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-size: clamp(2rem, 1.5rem + 2.4vw, 3.25rem);
+  }
+
+  /* CTA souligne (motif « underline CTA » du style Bold Typography) :
+     un trait de 3px en accent, qui s'etire au survol. */
+  .link-cta {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--tap-target);
+    font-weight: 700;
+    color: var(--foreground);
+    text-decoration: none;
+  }
+  .link-cta::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 6px;
+    height: 3px;
+    width: 100%;
+    background-color: var(--accent);
+    transform: scaleX(0.25);
+    transform-origin: left;
+    transition: transform var(--dur-hover) var(--ease-power2-out);
+  }
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .link-cta:hover::after { transform: scaleX(1); }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  5b. TUILE INVERSEE (hero bento)                                  */
+  /* ---------------------------------------------------------------- */
+  .tile-inverted {
+    background-color: var(--inverted-bg);
+    color: var(--inverted-fg);
+    border: 1px solid var(--inverted-border);
+    border-radius: 16px;
+  }
+  .tile-inverted h1,
+  .tile-inverted h2,
+  .tile-inverted h3 { color: var(--inverted-fg); }
+  .tile-inverted p { color: var(--inverted-muted); }
+  .tile-inverted strong { color: var(--inverted-fg); }
+
+  /* Bouton sur fond inverse : rempli de --inverted-fg, texte --inverted-bg.
+     Un `.btn-primary` classique n'y serait pas lisible (--primary sur
+     --inverted-bg = 1.82:1), d'ou ce variant dedie. */
+  .btn-inverted {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: var(--tap-target);
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-md);
+    background-color: var(--inverted-fg);
+    color: var(--inverted-bg);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    border: 1px solid var(--inverted-fg);
+    transition:
+      transform var(--dur-micro) var(--ease-power1-out),
+      background-color var(--dur-micro) var(--ease-power1-out);
+  }
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .btn-inverted:hover { transform: translateY(-1px); background-color: var(--inverted-accent); }
+    .btn-inverted:active { transform: translateY(0.5px) scale(0.99); }
+  }
+  .btn-inverted-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: var(--tap-target);
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-md);
+    background-color: transparent;
+    color: var(--inverted-fg);
+    border: 1px solid var(--inverted-border);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: border-color var(--dur-micro) var(--ease-power1-out);
+  }
+  @media (hover: hover) {
+    .btn-inverted-ghost:hover { border-color: var(--inverted-accent); color: var(--inverted-accent); }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  6. SKELETON (recette 15)                                         */
+  /* ---------------------------------------------------------------- */
+  .skeleton {
+    /* Repli pour les navigateurs sans `color-mix()` (Chrome < 111, Safari
+       < 16.2, Firefox < 113) — appareils Android anciens encore courants sur
+       la cible. La seconde declaration est invalide sur ces navigateurs et
+       sera ignoree, laissant celle-ci s'appliquer. */
+    background-image: linear-gradient(90deg, var(--muted) 0%, var(--card) 45%, var(--muted) 90%);
+    background-image: linear-gradient(
+      90deg,
+      var(--muted) 0%,
+      color-mix(in srgb, var(--muted) 55%, var(--card)) 45%,
+      var(--muted) 90%
+    );
+    background-size: 200% 100%;
+    animation: qcc-shimmer var(--dur-shimmer) var(--ease-sine-in-out) infinite;
+    border-radius: var(--radius-md);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  7. GARDE MOTION REDUIT — globale et non negociable                 */
+/* ------------------------------------------------------------------ */
+/*
+ * Chaque recette du skill porte `reduced-motion` dans ses exigences. Un seul
+ * bloc ici les couvre toutes, y compris les animations declarees plus haut :
+ * `animation: none` et `transition-duration: 1ms` neutralisent tout sans
+ * casser les etats finaux (le contenu reste visible, jamais fige a opacity:0).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Force l'etat final du reveal : sans cela un utilisateur en reduced-motion
+     verrait un contenu masque a jamais, puisque le bloc du point 3 ne
+     s'applique pas a lui. */
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

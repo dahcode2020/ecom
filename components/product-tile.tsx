@@ -1,4 +1,5 @@
 import { Icon } from './icon';
+import { ProductArtBackdrop } from './illustration';
 import { formatXOF } from '@/lib/format';
 import type { Product, StockState } from '@/lib/data';
 
@@ -55,11 +56,25 @@ export function ProductTile({ product, heading = 'h3', dense = false }: ProductT
 
   return (
     <article className="card flex flex-col gap-3 p-0">
-      {/* Tuile plate : pas de degrading, pas d'ombre (Flat Design).
-          Aucun <img> donc rien a charger en lazy : l'aplat et l'icone sont
-          deja dans le HTML et la CSS. */}
-      <div className="bg-muted text-primary flex aspect-square items-center justify-center rounded-t-lg">
-        <Icon name={product.icon} className={dense ? 'h-8 w-8' : 'h-10 w-10'} strokeWidth={1.5} />
+      {/* Tuile plate : pas de degrading, pas d'ombre portee (Flat Design).
+          Aucun <img> donc rien a charger en lazy : le socle et l'icone sont
+          deja dans le HTML et la CSS.
+
+          Le socle organique (`ProductArtBackdrop`) remplace le carre uni :
+          c'etait, avec l'absence d'images, la premiere cause du rendu juge
+          basique — 30 tuiles mecaniquement identiques. L'icone reste propre a
+          chaque produit, donc les 30 tuiles gardent une identite distincte
+          (~0,4 Ko de SVG chacune, zero requete). */}
+      <div className="bg-muted text-primary relative flex aspect-square items-center justify-center overflow-hidden rounded-t-lg">
+        <ProductArtBackdrop
+          categoryId={product.categoryId}
+          className="absolute inset-0 h-full w-full"
+        />
+        <Icon
+          name={product.icon}
+          className={`relative ${dense ? 'h-9 w-9' : 'h-11 w-11'}`}
+          strokeWidth={1.5}
+        />
       </div>
 
       <div className={`flex flex-1 flex-col gap-2 ${dense ? 'p-3' : 'p-4'}`}>

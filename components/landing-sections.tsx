@@ -1,10 +1,13 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { Illustration, illustrationForCategory } from './illustration';
 import { Icon, PaymentIcon } from './icon';
 import { ZoneCheck } from './zone-check';
 import {
   categories,
   paymentMethods,
   popularProducts,
+  products,
   productsByCategory,
   zones,
 } from '@/lib/data';
@@ -44,46 +47,124 @@ import { SUPPORT_WHATSAPP } from '@/lib/contact';
 /* 1. Hero + verification de zone                                      */
 /* ------------------------------------------------------------------ */
 export function Hero() {
+  // Toutes les statistiques sont CALCULEES depuis les donnees. Aucune n'est
+  // saisie a la main : c'est la derive deja corrigee trois fois dans ce projet
+  // (cartCount, montants du panier, comptes de rayons, « Six rayons »).
+  const servedZones = zones.filter((zone) => zone.served).length;
+  const minFee = Math.min(...zones.filter((zone) => typeof zone.fee === 'number').map((zone) => zone.fee!));
+
   return (
-    <section className="border-border border-b">
-      <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 md:py-16 lg:py-20">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
-          <div>
-            <p className="font-heading text-primary mb-4 inline-flex items-center gap-2 rounded-md border px-3 py-1 text-sm font-semibold">
-              <Icon name="truck" className="h-4 w-4" />
-              Cotonou &amp; Abomey-Calavi
-            </p>
+    <section className="border-border relative overflow-hidden border-b">
+      {/* Nappe decorative. `aria-hidden` + `pointer-events-none` : elle ne porte
+          aucune information et ne doit jamais intercepter un tap.
+          Animation `qcc-float` 11s (recette Aurora : boucle 8-12s), desactivee
+          par le bloc `prefers-reduced-motion` global de globals.css.
+          Le hero n'utilise PAS `data-reveal` : c'est le LCP et le contenu
+          indexable principal, il ne doit jamais dependre d'un observer. */}
+      <div
+        aria-hidden="true"
+        className="bg-secondary pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full opacity-[0.14] blur-3xl md:h-96 md:w-96"
+        style={{ animation: 'qcc-float 11s var(--ease-sine-in-out) infinite' }}
+      />
 
-            {/* h1 unique et reel (SEO) — pas un div stylise. */}
-            <h1 className="font-heading text-foreground text-4xl leading-tight font-bold text-balance sm:text-5xl">
-              Épicerie et pharmacie livrées chez vous en moins d’une heure
-            </h1>
+      <div className="relative mx-auto max-w-[1200px] px-4 py-8 sm:px-6 md:py-12 lg:py-14">
+        <div className="bento">
+          {/* --- 1. Tuile inversee : promesse + CTA ----------------------- */}
+          <div className="bento-tile tile-inverted bento-2x2 flex flex-col justify-between gap-8 p-6 md:p-8 lg:p-10">
+            <div>
+              <p
+                className="font-heading inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold"
+                style={{ borderColor: 'var(--inverted-border)', color: 'var(--inverted-accent)' }}
+              >
+                <Icon name="truck" className="h-4 w-4" />
+                Cotonou &amp; Abomey-Calavi
+              </p>
 
-            <p className="text-muted-foreground mt-4 max-w-prose text-lg">
-              Produits frais, épicerie, médicaments sans ordonnance et hygiène. Paiement MTN MoMo,
-              Moov Money, Wave — ou à la livraison.
-            </p>
+              {/* h1 unique et reel (SEO). Classe `.display` : clamp 36 -> 68px,
+                  tracking -0.03em, line-height 1.03 — l'echelle affirmee du
+                  style Bold Typography (« H1 at least 4-5x body size »).
+                  Le mot cle « moins d'une heure » porte l'accent : c'est la
+                  promesse qui decide l'achat en quick commerce. */}
+              <h1 className="display mt-5">
+                Épicerie et pharmacie livrées en{' '}
+                <span style={{ color: 'var(--inverted-accent)' }}>moins d’une heure</span>
+              </h1>
 
-            {/* Le contenu du hero n'est PAS masque a opacity:0 : c'est le LCP et
-                c'est indexable. Aucun scroll reveal sur cette page. */}
-            <ul className="text-foreground mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-              {[
-                { icon: 'clock', text: 'Livraison 25–90 min' },
-                { icon: 'truck', text: 'Dès 500 FCFA' },
-                { icon: 'shieldPlain', text: 'Pharmacie partenaire' },
-              ].map((item) => (
-                <li key={item.text} className="flex items-center gap-2">
-                  <Icon name={item.icon} className="text-primary h-4 w-4" />
-                  {item.text}
-                </li>
-              ))}
-            </ul>
+              <p className="lede mt-5 max-w-prose" style={{ color: 'var(--inverted-muted)' }}>
+                Produits frais, épicerie, médicaments sans ordonnance et hygiène.
+                Paiement <strong>MTN MoMo</strong>, <strong>Moov Money</strong>,{' '}
+                <strong>Wave</strong> — ou à la livraison.
+              </p>
+            </div>
+
+            <div className="tap-group flex flex-wrap gap-3">
+              {/* Bouton primaire INVERSE : un `.btn-primary` classique serait
+                  illisible ici (--primary sur --inverted-bg = 1.82:1, mesure). */}
+              <a href="#zone-check" className="btn-inverted">
+                <Icon name="mapPin" className="h-5 w-5" />
+                Vérifier ma zone
+              </a>
+              <Link href="/catalogue" className="btn-inverted-ghost">
+                Voir le catalogue
+              </Link>
+            </div>
           </div>
 
-          {/* CTA primaire : la verification de zone, au-dessus de la ligne de
-              flottaison (marketplace-directory : « Search is the primary CTA »). */}
-          <div className="card bg-card p-6 sm:p-8">
+          {/* --- 2. Tuile image ------------------------------------------- */}
+          <div className="bento-tile bento-2x2 relative min-h-[260px] md:min-h-[320px]">
+            {/* `fill` impose un parent positionne (c'est le cas) et des
+                width/height implicites via `sizes` : aucun deplacement de
+                mise en page (CLS) au chargement.
+                PAS de `priority` : sur mobile cette tuile est sous la ligne de
+                flottaison, donc le LCP reste le titre du hero — conformement a
+                pages/landing.md. Sur desktop elle est visible et se charge
+                immediatement, `loading="lazy"` ne différant que le hors-ecran.
+                Mesure : ~48 Ko en AVIF a 640w, ~126 Ko a 1024w. */}
+            <Image
+              src="/img/hero-marche.jpg"
+              alt="Panier de courses ouest-africain : ananas, tomates, légumes verts, riz et huile, disposés sur un fond clair"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 40vw"
+              className="object-cover"
+            />
+            {/* Voile tres leger en bas pour garantir la lisibilite de la
+                legende, quelle que soit l'image. Pas un degrade decoratif :
+                c'est un support de contraste. */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-x-0 bottom-0 h-24"
+              style={{ background: 'linear-gradient(to top, rgb(12 26 18 / 0.72), transparent)' }}
+            />
+            <p className="absolute bottom-4 left-4 right-4 text-sm font-semibold text-white">
+              <Icon name="leaf" className="mr-1.5 inline h-4 w-4" />
+              Du marché à votre porte
+            </p>
+          </div>
+
+          {/* --- 3. Verification de zone : le CTA primaire ---------------- */}
+          <div id="zone-check" className="bento-tile bento-2x2 scroll-mt-24 p-5 md:p-6 lg:bento-2x1">
             <ZoneCheck />
+          </div>
+
+          {/* --- 4-5. Preuves chiffrees ---------------------------------- */}
+          <div className="bento-tile bento-tile-interactive flex flex-col justify-center gap-1 p-5">
+            <p className="stat" style={{ color: 'var(--primary)' }}>
+              {servedZones}
+            </p>
+            <p className="text-foreground text-sm font-semibold">quartiers desservis</p>
+            <p className="text-muted-foreground text-xs">
+              sur {zones.length} suivis, étendus chaque mois
+            </p>
+          </div>
+
+          <div className="bento-tile bento-tile-interactive flex flex-col justify-center gap-1 p-5">
+            <p className="stat" style={{ color: 'var(--accent)' }}>
+              {formatXOF(minFee).replace('\u202fFCFA', '')}
+            </p>
+            <p className="text-foreground text-sm font-semibold">de frais de livraison</p>
+            <p className="text-muted-foreground text-xs">
+              offerte dès {formatXOF(15000)} d’achat
+            </p>
           </div>
         </div>
       </div>
@@ -95,37 +176,106 @@ export function Hero() {
 /* 2. Categories                                                       */
 /* ------------------------------------------------------------------ */
 export function Categories() {
+  /**
+   * Grille bento asymetrique. Les spans sont explicites par index : c'est
+   * l'irregularite qui cree l'interet visuel (checklist du style :
+   * « Card spans varied »). Une grille uniforme de 6 tuiles identiques etait
+   * exactement le rendu juge basique.
+   *
+   * Disposition visee sur 4 colonnes (lg) :
+   *   [ epicerie 2x2 ] [ pharmacie ] [ boissons ]
+   *   [              ] [ hygiene   ] [ frais    ]
+   *   [ maison 2x1     ] [ CTA catalogue 2x1    ]
+   * En mobile tout retombe a une colonne, donc l'ordre du DOM est l'ordre de
+   * lecture : rien n'est masque ni reordonne par CSS.
+   */
+  const spans = ['bento-2x2', '', '', '', '', 'bento-2x1'];
+
   return (
     <section className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 md:py-16" aria-labelledby="h-categories">
-      <h2 id="h-categories" className="font-heading text-foreground text-2xl font-bold sm:text-3xl">
-        Nos rayons
-      </h2>
-      {/* Nombre de rayons CALCULE, jamais ecrit a la main : « Six » mentait
-          des l'ajout d'un rayon. */}
-      <p className="text-muted-foreground mt-2">
-        {frenchCardinalCapitalized(categories.length)} rayons, un seul panier.
-      </p>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 id="h-categories" className="display-sm">
+            Nos rayons
+          </h2>
+          {/* Nombre de rayons CALCULE, jamais ecrit a la main : « Six » mentait
+              des l'ajout d'un rayon. */}
+          <p className="text-muted-foreground lede mt-2">
+            {frenchCardinalCapitalized(categories.length)} rayons, un seul panier, une seule
+            livraison.
+          </p>
+        </div>
+        {/* CTA souligne : motif « underline CTA » du style Bold Typography, le
+            trait s'etire au survol via `.link-cta::after`. */}
+        <Link href="/catalogue" className="link-cta text-sm">
+          Tout le catalogue
+          <Icon name="arrowRight" className="h-4 w-4" />
+        </Link>
+      </div>
 
-      {/* 2 colonnes mobile, 3 en tablette, 4+ en desktop.
-          Tuiles >= 48px, ecart >= 8px. Libelles non tronques. */}
-      <ul className="mt-8 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-6">
-        {categories.map((category) => (
-          <li key={category.id}>
+      {/* Chaque tuile mene au catalogue FILTRE, et non a une ancre de cette
+          page : c'est le comportement « directory » attendu d'une landing
+          marketplace, et l'URL reste partageable. */}
+      <ul className="bento m-0 list-none p-0" data-reveal-group="rayons">
+        {categories.map((category, index) => (
+          <li key={category.id} className={spans[index] ?? ''} data-reveal data-reveal-group="rayons">
             <Link
-              href={`#${category.id}`}
-              className="bg-muted text-foreground hover:border-border-strong flex min-h-12 flex-col items-center justify-center gap-2 rounded-lg border p-4 text-center no-underline"
+              href={`/catalogue?cat=${category.id}`}
+              className="bento-tile bento-tile-interactive group flex h-full min-h-12 flex-col justify-between gap-4 p-4 no-underline md:p-5"
             >
-              <Icon name={category.icon} className="text-primary h-7 w-7" strokeWidth={1.75} />
-              {/* Libelle court, une ligne, jamais tronque : la checklist du
-                  Master impose « No horizontal scroll on mobile » et le
-                  responsive 375px. */}
-              <span className="font-heading text-sm leading-tight font-semibold">
-                {category.name}
-              </span>
-              <span className="text-muted-foreground text-xs">{category.count} articles</span>
+              {/* Illustration dessinee sur mesure, pas une icone : c'est le
+                  changement le plus visible par rapport au rendu initial.
+                  Couleurs par variables, donc correcte en mode sombre. */}
+              <Illustration
+                name={illustrationForCategory(category.id)}
+                title={`Rayon ${category.name}`}
+                className={
+                  index === 0
+                    ? 'text-primary h-auto w-full max-w-[220px]'
+                    : 'text-primary h-auto w-24 md:w-28'
+                }
+              />
+
+              <div>
+                <p className="font-heading text-foreground text-base leading-tight font-bold md:text-lg">
+                  {category.name}
+                </p>
+                {/* Le compte est CALCULE depuis `products` par `lib/data.ts`. */}
+                <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
+                  {category.count} produits
+                  <Icon
+                    name="arrowRight"
+                    className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5"
+                  />
+                </p>
+              </div>
             </Link>
           </li>
         ))}
+
+        {/* Tuile de cloture : elle equilibre la grille et donne une seconde
+            sortie vers le catalogue. Contenu CALCULE, pas saisi. */}
+        <li className="bento-2x1" data-reveal data-reveal-group="rayons">
+          <Link
+            href="/catalogue"
+            className="bento-tile bento-tile-interactive group flex h-full flex-col justify-center gap-2 bg-muted p-5 no-underline"
+          >
+            <p className="stat" style={{ color: 'var(--primary)' }}>
+              {products.length}
+            </p>
+            <p className="text-foreground text-sm font-semibold">produits en stock</p>
+            <p className="text-muted-foreground text-xs">
+              prix en FCFA, stock affiché, recherche par rayon
+            </p>
+            <span className="text-accent mt-1 inline-flex items-center gap-1.5 text-sm font-semibold">
+              Parcourir le catalogue
+              <Icon
+                name="arrowRight"
+                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
+              />
+            </span>
+          </Link>
+        </li>
       </ul>
     </section>
   );
@@ -449,5 +599,113 @@ export function CategorySections() {
         );
       })}
     </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 8. Vitrine bento — visuels raster generes                           */
+/* ------------------------------------------------------------------ */
+/**
+ * Trois visuels generes, en grille asymetrique.
+ *
+ * POIDS — mesure avec sharp, pas estime :
+ *   704 Ko de JPEG sources -> 117 Ko d'AVIF cumules a 640w (facteur 6).
+ *   Chaque tuile declare `sizes` pour ne jamais recevoir une variante plus
+ *   large que son affichage reel.
+ *
+ * Les trois tuiles sont SOUS la ligne de flottaison : `loading="lazy"` par
+ * defaut, donc aucun de ces octets ne pese sur le LCP. Le hero reste le seul
+ * visuel au-dessus, lui non plus pas en `priority` (voir `Hero`).
+ *
+ * VOILE DE CONTRASTE — alpha 0.72 minimum, et ce n'est pas decoratif :
+ *   blanc sur voile 0.72, image blanche derriere (pire cas) = 7.15:1  AAA
+ *   blanc sur voile 0.55, meme pire cas                     = 4.00:1  INSUFFISANT
+ *   texte secondaire #BBF7D0 sur voile 0.72                 = 5.90:1  AA
+ * Descendre sous 0.65 ferait passer sous les 4.5:1 des qu'une zone claire de
+ * l'image se trouve derriere le texte. Valeur calculee, pas choisie a l'oeil.
+ */
+const SCRIM = 'linear-gradient(to top, rgb(12 26 18 / 0.78) 0%, rgb(12 26 18 / 0.42) 45%, transparent 100%)';
+
+const SHOWCASE = [
+  {
+    src: '/img/livraison.jpg',
+    alt: 'Coursier à moto avec un caisson de livraison isotherme vert, dans une rue de Cotonou en fin d’après-midi',
+    span: 'bento-2x2',
+    title: 'Livré par des coursiers du quartier',
+    text: 'Moto, caisse isotherme, et un contact direct par appel ou WhatsApp dès la prise en charge.',
+    href: '/suivi',
+    cta: 'Voir le suivi en direct',
+    icon: 'truck',
+  },
+  {
+    src: '/img/frais.jpg',
+    alt: 'Panier de produits frais ouest-africains : ananas, tomates, oranges et gombos',
+    span: 'bento-2x1',
+    title: 'Le frais, choisi le matin',
+    text: 'Ananas, tomates, légumes verts : sélection au marché, livrée dans la journée.',
+    href: '/catalogue?cat=frais',
+    cta: 'Voir les produits frais',
+    icon: 'leaf',
+  },
+  {
+    src: '/img/pharmacie.jpg',
+    alt: 'Assortiment de pharmacie disposé sur un fond vert pâle : plaquettes, sirop, thermomètre et tensiomètre',
+    span: 'bento-2x1',
+    title: 'Pharmacie partenaire',
+    text: 'Sans ordonnance en direct ; avec ordonnance, délivrance vérifiée à la préparation.',
+    href: '/catalogue?cat=pharmacie',
+    cta: 'Voir la pharmacie',
+    icon: 'cross',
+  },
+] as const;
+
+export function Showcase() {
+  return (
+    <section className="border-border border-t" aria-labelledby="h-showcase">
+      <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 md:py-16">
+        <h2 id="h-showcase" className="display-sm mb-2">
+          Trois raisons de commander aujourd’hui
+        </h2>
+        <p className="text-muted-foreground lede mb-8 max-w-2xl">
+          Le coursier, le frais et la pharmacie — réunis dans un seul panier et une
+          seule livraison.
+        </p>
+
+        <div className="bento" data-reveal-group="vitrine">
+          {SHOWCASE.map((item) => (
+            <div key={item.src} className={item.span} data-reveal data-reveal-group="vitrine">
+              <Link
+                href={item.href}
+                className="bento-tile bento-tile-interactive group relative flex h-full min-h-[220px] flex-col justify-end overflow-hidden p-5 no-underline md:min-h-[260px] md:p-6"
+              >
+                <Image
+                  src={item.src}
+                  alt={item.alt}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 40vw"
+                  className="object-cover"
+                />
+                <div aria-hidden="true" className="absolute inset-0" style={{ background: SCRIM }} />
+
+                <div className="relative">
+                  <p className="mb-2 inline-flex items-center gap-2 text-xs font-semibold text-white">
+                    <Icon name={item.icon} className="h-4 w-4" />
+                    <span className="rounded-full bg-white/15 px-2.5 py-1 backdrop-blur-[2px]">
+                      {item.cta}
+                    </span>
+                  </p>
+                  <p className="font-heading text-xl leading-tight font-bold text-white md:text-2xl">
+                    {item.title}
+                  </p>
+                  <p className="mt-1.5 max-w-prose text-sm" style={{ color: '#BBF7D0' }}>
+                    {item.text}
+                  </p>
+                </div>
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

@@ -7,6 +7,43 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 
   /**
+   * Optimisation des images.
+   *
+   * `sharp` est present dans l'environnement (verifie), donc l'optimiseur de
+   * Next peut re-encoder au runtime.
+   *
+   * MESURE REELLE via `curl` sur l'optimiseur (`/_next/image?...&w=640&q=75`),
+   * avec un en-tete Accept declarant avif puis webp — les 4 visuels cumules :
+   *
+   *   JPEG sources          704 Ko
+   *   AVIF  a 640w          64,3 Ko   (hero 24,5 | livraison 17,2 |
+   *                                    frais 16,5 | pharmacie 6,2)
+   *   WebP  a 640w         117,5 Ko
+   *   AVIF  a 1024w        138,3 Ko
+   *
+   * AVIF d'abord, WebP en repli : l'AVIF sert ~1,8x plus petit ici.
+   *
+   * CORRECTION D'UNE ESTIMATION FAUSSE. Un test `sharp` isole annoncait
+   * 116,9 Ko d'AVIF q65 a 640w et 114,8 Ko de WebP q75 — soit WebP legerement
+   * gagnant. C'etait trompeur : les reglages d'encodeur AVIF par defaut de
+   * sharp (`effort` bas, donc compression rapide) ne sont pas ceux de
+   * l'optimiseur de Next, qui compresse nettement mieux. Seule la mesure sur le
+   * serveur reel fait foi. Lecon : ne jamais extrapoler un budget d'octets
+   * d'un outil de conversion vers un autre.
+   *
+   * Seul le hero est au-dessus de la ligne de flottaison (~24,5 Ko sur mobile) ;
+   * les trois visuels de la vitrine sont en `loading="lazy"` et ne pesent donc
+   * pas sur le LCP.
+   */
+  images: {
+    formats: ['image/avif', 'image/webp'] as const,
+    // Les visuels generes font au plus 1408px de large. Plafonner evite de
+    // servir des variantes inutiles et limite le travail de l'optimiseur.
+    deviceSizes: [420, 640, 750, 828, 1024, 1200],
+    minimumCacheTTL: 31536000,
+  },
+
+  /**
    * En-tetes de reponse.
    *
    * L'App Router ne permet pas d'emettre des en-tetes de reponse depuis une

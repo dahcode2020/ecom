@@ -329,7 +329,9 @@ Etend la checklist du Master, ne la remplace pas.
 - [ ] Aucun contenu indexable a `opacity: 0` ; reveal en CSS pur, decoratif uniquement
 - [ ] `prefers-reduced-motion` : etat final immediat, compteurs figes
 - [ ] 4 tuiles de categories mobile / 4+ desktop, icônes SVG, libelles non tronques
-- [ ] Cartes produit : `next/image` + `sizes` + AVIF/WebP, hero seul en `priority`, reste lazy
+- [ ] Cartes produit : `next/image` + `sizes` + AVIF/WebP — **hero NON prioritaire** (voir
+      l'amendement IMAGES en fin de fichier : `priority` couterait ~24 Ko sur mobile ou le
+      visuel est sous la ligne de flottaison, et le LCP doit rester le titre)
 - [ ] Prix au format `1 500 FCFA`
 - [ ] Produits indisponibles marques visiblement, bouton `aria-disabled`, jamais retires
 - [ ] Bloc 3 etapes : une phrase par etape, mini-CTA par etape, CTA principal en fin
@@ -364,3 +366,181 @@ found and use clearly labeled general guidance instead. »*
 > **Guidance generale, explicitement NON issue de la base :** les regles d'etat de stock, de
 > retrait silencieux et d'achat sans compte donnees plus haut sont des pratiques standard du
 > commerce en ligne, pas des recommandations du skill. A valider par l'equipe produit.
+
+
+---
+
+# AMENDEMENT — direction visuelle « Bento éditorial premium »
+
+Ajouté après livraison d'une première version jugée **basique**, à juste titre. Diagnostic mesuré
+de cette première version, qui explique le verdict :
+
+| Manque | Mesure |
+|---|---|
+| Motion expressive | **0 `@keyframes`** dans tout le design system |
+| Animations | 4 occurrences, toutes `animate-spin` / `animate-pulse` = spinners fonctionnels |
+| Transitions | 5 au total |
+| Impact typographique | h1 majoritairement en `text-3xl` (30 px), `text-5xl` utilisé **une fois** |
+| Imagerie | aucune ; chaque produit = carré plat + 1 icône |
+| Asymétrie | aucune ; sections empilées uniformément |
+
+Trois causes : `--variance` jamais utilisé (le Master note qu'il pousse vers *Minimalism & Swiss*,
+donc plus minimal encore), le Flat Design décliné en règle « aucun dégradé, aucune ombre », et
+l'absence d'images traitée comme une fatalité technique alors que c'était le **premier** facteur du
+rendu wireframe.
+
+## Styles retenus (catalogue `styles.csv`, 88 entrées)
+
+Combinés, tous `cost:low` et Mobile `adaptable`/`nativ` :
+
+| Style | Complexité | Perf | A11y | Mobile | Conversion |
+|---|---|---|---|---|---|
+| Bento Box Grid | Low | cost:low | risk:low | adaptable | High |
+| Hero-Centric Design | Medium | cost:low | risk:low | native | **Very High** |
+| Bold Typography (Mobile Poster) | Medium | cost:low | risk:conditional | native | High |
+| Micro-interactions | Medium | cost:low | risk:low | adaptable | High |
+
+**Écartés avec la raison lue dans leur colonne « Do Not Use For »** — pas par goût :
+Neubrutalism, Claymorphism, Vibrant & Block-based (*healthcare*, or il y a un rayon pharmacie sous
+ordonnance) ; Aurora UI / Gradient Mesh (*critical accessibility, content-heavy*) ; Swiss Modernism
+2.0 et Exaggerated Minimalism (*plus minimal encore, l'inverse de la demande*) ; 3D &
+Hyperrealism, Skeuomorphism, Parallax Storytelling (*cost:high*, interdit sur la cible 3G/4G).
+
+Le **Flat Design n'est pas abandonné** : il reste la base (aplats, pas de flou, séparation par fond
+et bordure). Ce qui change est l'ossature — grille asymétrique, échelle typographique affirmée,
+profondeur par couches, mouvement.
+
+**Deux règles du Master sont amendées, et c'est assumé :**
+1. *Correction n°7* (ombres réservées aux calques flottants) : Bento demande « Shadows subtle ».
+   Une ombre très légère est autorisée **uniquement au survol** des tuiles bento. Au repos la
+   séparation reste assurée par fond + bordure : l'intention de la règle est préservée.
+2. Le LCP n'est plus nécessairement le titre : voir IMAGES ci-dessous.
+
+## Typographie
+
+`.display` = `clamp(2.25rem, 1.4rem + 4.2vw, 4.25rem)`, graisse 800, `line-height: 1.03`,
+`letter-spacing: -0.03em`, `text-wrap: balance`. Ratio h1/corps ≈ 4,3× à 68 px pour un corps de
+16 px — la checklist du style exige « at least 4–5× ».
+
+Sur 375 px le clamp retombe à ~36 px, soit 2,25× : **en dessous de la cible du style,
+volontairement**. « Text bleeds to/over screen edges » est un code d'affiche ; appliqué à un titre
+de 8 mots il ferait déborder la ligne, ce que ce même style interdit par ailleurs. La contrainte
+« No horizontal scroll on mobile » du Master prime.
+
+`.display-sm` (titres de section), `.lede` (accroches, `text-wrap: pretty` pour éviter les veuves)
+et `.stat` (chiffres mis en avant) complètent l'échelle.
+
+## IMAGES — poids mesurés sur le serveur, pas estimés
+
+4 visuels générés dans `public/img/`, servis par l'optimiseur Next (`sharp` présent, vérifié).
+
+| Format / largeur | hero | livraison | frais | pharmacie | **Total** |
+|---|---|---|---|---|---|
+| JPEG source | 213,7 Ko | 194,3 Ko | 204,0 Ko | 88,0 Ko | **704 Ko** |
+| AVIF 640w | 24,5 Ko | 17,2 Ko | 16,5 Ko | 6,2 Ko | **64,3 Ko** |
+| WebP 640w | 45,0 Ko | 32,1 Ko | 31,0 Ko | 9,4 Ko | **117,5 Ko** |
+| AVIF 1024w | 60,0 Ko | 32,8 Ko | 34,2 Ko | 11,3 Ko | **138,3 Ko** |
+
+**Estimation fausse corrigée.** Un test `sharp` isolé annonçait 116,9 Ko d'AVIF et 114,8 Ko de
+WebP à 640w — WebP semblait gagnant. Faux en conditions réelles : les réglages d'encodeur AVIF par
+défaut de `sharp` (`effort` bas, compression rapide) ne sont pas ceux de l'optimiseur Next, qui
+compresse ~1,8× mieux. **Leçon : ne jamais extrapoler un budget d'octets d'un outil de conversion
+à un autre ; mesurer sur le serveur qui servira réellement les octets.**
+
+**Décision `priority` — l'inverse de ce que disait la checklist ci-dessus.** Le hero n'est PAS en
+`priority`. Sur mobile (cible déclarée du projet) cette tuile est sous la ligne de flottaison :
+`priority` y préchargerait ~24 Ko inutilement, et le LCP redeviendrait l'image. Sans `priority`,
+`loading="lazy"` ne diffère que le hors-écran : sur desktop, où le visuel est visible, il se charge
+immédiatement. Le LCP reste donc le titre du hero sur mobile, conformément à la règle d'origine.
+
+Les 3 visuels de la vitrine sont sous la ligne de flottaison : aucun effet sur le LCP.
+
+**Voile de contraste sur image — alpha 0.72 minimum, valeur calculée.** Ce n'est pas décoratif :
+
+| Configuration | Ratio (pire cas, image blanche derrière) |
+|---|---|
+| blanc sur voile 0.55 | 4,00:1 — **insuffisant** |
+| blanc sur voile 0.65 | 5,58:1 — AA |
+| blanc sur voile 0.72 | **7,15:1 — AAA** |
+| blanc sur voile 0.80 | 9,57:1 — AAA |
+| secondaire `#BBF7D0` sur voile 0.72 | 5,90:1 — AA |
+
+Descendre sous 0,65 fait passer sous 4,5:1 dès qu'une zone claire de l'image se trouve derrière le
+texte. La valeur est issue du calcul, pas d'un choix à l'œil.
+
+## Tuile inversée — tokens dédiés, accents vérifiés
+
+Fond = `--foreground`, texte = `--background` : l'inversion suit automatiquement le thème. **Mais
+les accents ne peuvent pas suivre**, et c'est mesuré :
+
+| Sur fond inversé clair `#14532D` | Ratio | Verdict |
+|---|---|---|
+| `--secondary` `#22C55E` | 4,00:1 | insuffisant pour du texte |
+| `--accent` `#0369A1` | 1,54:1 | interdit |
+| `--primary` `#15803D` | 1,82:1 | un bouton primaire y serait quasi invisible |
+| texte `#F0FDF4` | 8,70:1 | AAA |
+| secondaire `#BBF7D0` | 7,52:1 | AAA |
+| accent dédié `#86EFAC` | 6,49:1 | AA |
+
+En mode sombre le fond inversé devient clair (`#E8F5EC`) : texte `#0C1A12` 15,96:1, secondaire
+`#1F5C3A` 7,06:1, accent `#166534` 6,35:1 — tandis que `--primary` `#22C55E` n'y donnerait que
+2,94:1. D'où les tokens `--inverted-*` distincts, et les variantes `.btn-inverted` /
+`.btn-inverted-ghost` : un `.btn-primary` classique sur cette tuile serait illisible.
+
+## Motion — 17 recettes de `motion.csv`, appliquées sans GSAP
+
+GSAP reste écarté (~70 Ko). Les durées et courbes des recettes sont portées par des tokens CSS,
+chaque token citant sa recette d'origine :
+
+| Token | Recette | Durée | Courbe GSAP → `cubic-bezier` |
+|---|---|---|---|
+| `--dur-micro` / `--ease-power1-out` | 1 Hover [Subtle] | 180 ms | `power1.out` → `(0.25,0.46,0.45,0.94)` |
+| `--dur-hover` / `--ease-power2-out` | 2 Hover [Standard] | 260 ms | `power2.out` → `(0.215,0.61,0.355,1)` |
+| `--dur-stagger` / `--ease-back-out` | 8 Stagger [Standard] | 380 ms | `back.out(1.4)` → `(0.34,1.56,0.64,1)` |
+| `--stagger-step` | 7 Stagger [Subtle] | 30 ms/élément | — |
+| `--reveal-offset` | 4 Scroll Reveal [Subtle] | — | y 12 px (fourchette 8–16 px) |
+| `--dur-shimmer` / `--ease-sine-in-out` | 15 Skeleton | 1 400 ms | `sine.inOut` → `(0.445,0.05,0.55,0.95)` |
+| `--dur-route` / `--ease-power1-in-out` | 10 Page Transition | 240 ms | `power1.inOut` → `(0.45,0,0.55,1)` |
+
+Garde-fous des recettes, respectés et vérifiables dans le code :
+- **4 DON'T** — pas de contenu indexable masqué *sans repli no-JS*. Quatre replis : l'état masqué
+  vit dans `.js [data-reveal]` (classe posée par le script bloquant) ; un `<noscript>` remet
+  `opacity: 1` en `!important` ; `prefers-reduced-motion: reduce` neutralise tout **y compris
+  l'état final** ; côté client, `IntersectionObserver` absent ⇒ tout est révélé.
+- **5 DON'T** — stagger plafonné à 8 rangs (`MAX_STAGGER_RANK`), au-delà les derniers éléments
+  paraissent traîner.
+- **7 DO** — délai par élément 20–40 ms : `--stagger-step` vaut 30 ms.
+- **8 DON'T** — « Don't use back.out on dense data tables » : l'overshoot est réservé aux tuiles
+  bento de la landing, **jamais** à la grille du catalogue (30 produits, UI informationnelle).
+- **1 DO** — déplacement < 2 px : `translateY(-1px)` au survol des boutons.
+- **2 DO** — tween de retour apparié : en CSS `:hover`/`:not(:hover)` est symétrique par
+  construction, donc rien ne reste collé si le pointeur sort vite.
+- **15 DO** — balayage de `background-position`, pas un fondu d'opacité.
+- **13 DON'T** — jamais de parallaxe sur du texte courant (aucune parallaxe ici).
+- **17** — pas d'auto-rotation : aucun carrousel automatique, conformément à ce fichier.
+
+`@media (hover: hover)` garde chaque effet de survol : sans cela un tap mobile laisserait l'état
+survol collé sur la tuile.
+
+## Illustrations SVG
+
+Deux niveaux, pour deux usages différents :
+- **6 scènes par rayon** (`Illustration`) : compositions dessinées (sac de riz + bouteille +
+  pâtes, flacon + plaquette, ananas tréillissé + tomate…). ~1 Ko chacune, utilisées là où une
+  scène se justifie.
+- **`ProductArtBackdrop`** pour les 30 tuiles produit : le même langage graphique en couche de
+  fond, l'icône propre au produit restant par-dessus. Les 6 scènes seules auraient fait partager la
+  même illustration à 7 produits d'épicerie — remplacer une répétition par une autre.
+
+Une variante `foreignObject` enveloppant l'icône dans le SVG a été écrite puis **abandonnée** :
+rendu irrégulier dans Safari, exigence `xmlns` supplémentaire, et aucun apport face à un simple
+`position: absolute`.
+
+**Couleurs par variables** (`var(--primary)`, `var(--accent)`…), jamais en hex codé en dur : les
+illustrations basculent donc automatiquement en mode sombre. Des hex fixes resteraient clairs sur
+fond sombre — le même défaut que `color-scheme` corrigeait pour les contrôles natifs.
+
+**Accessibilité** : `aria-label` et non `aria-labelledby` + `<title id>`. La landing affiche chaque
+rayon deux fois (`Categories()` et `CategorySections()`), donc un id dérivé du nom serait dupliqué
+et `aria-labelledby` résoudrait vers le premier. `useId` aurait réglé le cas mais sa disponibilité
+en Server Component n'est pas garantie ; `aria-label` est déterministe.
