@@ -1,0 +1,371 @@
+/*
+ * Design tokens — Quick Commerce Cotonou
+ * Source de verite : design-system/quick-commerce-cotonou/MASTER.md
+ * Genere par le skill ui-ux-pro-max (Flat Design, Motion 3/10, Density 7/10),
+ * puis verifie et corrige — voir "## Corrections verifiees" dans MASTER.md.
+ *
+ * Stack : Next.js (App Router) + shadcn/ui + Tailwind v4.
+ * Guidelines du skill appliquees ici :
+ *   shadcn  — "Use CSS variables for colors: :root and .dark variables plus
+ *              @theme inline mappings" / "Don't: Hardcode palette colors in components"
+ *   shadcn  — "Support dark mode: define complete :root and .dark semantic schemes"
+ *   nextjs  — "Use next/font for fonts" / "Don't: External font links"
+ *   nextjs  — "Apply font to layout: className on body in layout.tsx"
+ *
+ * A copier vers app/globals.css au scaffold du projet Next.js.
+ *
+ * ---------------------------------------------------------------------------
+ * NOMMAGE
+ *   MASTER.md documente les tokens en `--color-*`. Ici on suit la convention
+ *   shadcn : valeurs brutes en `:root` / `.dark` sous noms courts, puis mapping
+ *   `@theme inline` vers l'espace `--color-*` de Tailwind.
+ *   Utilitaires generes : bg-background, text-foreground, text-muted-foreground,
+ *   border-border-strong, bg-primary, text-primary-foreground…
+ *
+ * ---------------------------------------------------------------------------
+ * POLICES
+ *   `--font-rubik` et `--font-nunito` sont injectes par next/font (options
+ *   `variable:` dans app/layout.tsx). Ce fichier ne les definit donc PAS : il
+ *   les consomme. D'ou l'usage de var(--font-rubik) dans @layer base — avec
+ *   `@theme inline`, Tailwind n'emet pas la variable intermediaire dans :root,
+ *   donc `var(--font-heading)` y serait indefinie.
+ *
+ * ---------------------------------------------------------------------------
+ * ESPACEMENT
+ *   L'echelle `--density 7` generee par le skill correspond EXACTEMENT a
+ *   l'echelle Tailwind par defaut (base 0.25rem = 4px) :
+ *      --space-xs   4px = 1      --space-xl   32px = 8
+ *      --space-sm   8px = 2      --space-2xl  48px = 12
+ *      --space-md  16px = 4      --space-3xl  64px = 16
+ *      --space-lg  24px = 6
+ *   => Utiliser directement p-4, gap-2, px-6, py-12. Les variables --space-*
+ *      ci-dessous sont conservees comme documentation executable et pour les
+ *      valeurs arbitraires (p-[var(--space-lg)]).
+ *
+ * ---------------------------------------------------------------------------
+ * CONTRASTES MESURES (WCAG 2.1, formule relative luminance)
+ *   Light — 9/9 paires texte >= 4.5:1 (minimum 4.61:1)
+ *   Dark  — 13/13 paires texte >= 4.5:1, 3/3 paires UI >= 3:1
+ *
+ *   --border (decoratif) : 1.16:1 light / 1.49:1 dark. ASSUME et documente :
+ *   il ne delimite aucun composant, seulement des separateurs visuels.
+ *   Pour tout champ, select, checkbox ou bouton outline, utiliser
+ *   --border-strong : 3.45:1 sur page / 3.61:1 sur carte (light),
+ *   6.72:1 / 6.10:1 (dark). Seuil WCAG 1.4.11 = 3:1.
+ *
+ *   Les valeurs sont en hex. shadcn genere de l'oklch : les deux sont acceptes
+ *   par Tailwind v4. NE PAS convertir a la main — tous les ratios ci-dessus ont
+ *   ete mesures sur ces valeurs hex exactes.
+ */
+
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/* LIGHT — palette generee par le skill, validee telle quelle          */
+/* ------------------------------------------------------------------ */
+:root {
+  /* Surfaces */
+  --background: #f0fdf4;             /* vs foreground : 8.70:1 */
+  --foreground: #14532d;
+  --card: #ffffff;                   /* vs foreground : 9.11:1 */
+  --card-foreground: #14532d;
+  --muted: #e8f0f1;                  /* vs muted-foreground : 6.55:1 */
+  --muted-foreground: #475569;       /* 7.24:1 sur background, 7.58:1 sur card */
+
+  /* Marques */
+  --primary: #15803d;                /* blanc dessus : 5.02:1 */
+  --primary-foreground: #ffffff;
+  --secondary: #22c55e;
+  --secondary-foreground: #0f172a;   /* 7.83:1. INTERDIT avec #ffffff : 2.28:1 */
+  --accent: #0369a1;                 /* blanc dessus : 5.93:1 */
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;            /* blanc dessus : 4.83:1 card / 4.61:1 page */
+  --destructive-foreground: #ffffff;
+
+  /* Contours */
+  --border: #bbf7d0;                 /* decoratif uniquement — voir note en tete */
+  --border-strong: #6b8f76;          /* controles : 3.45:1 page / 3.61:1 card */
+  --input: #6b8f76;                  /* bordure de champ de saisie */
+  --ring: #15803d;                   /* focus : 4.79:1 page / 5.02:1 card */
+
+  /* Espacement — density 7/10. Identique a l'echelle Tailwind, voir en-tete. */
+  --space-xs: 0.25rem;   /*  4px = Tailwind 1  */
+  --space-sm: 0.5rem;    /*  8px = Tailwind 2  */
+  --space-md: 1rem;      /* 16px = Tailwind 4  */
+  --space-lg: 1.5rem;    /* 24px = Tailwind 6  */
+  --space-xl: 2rem;      /* 32px = Tailwind 8  */
+  --space-2xl: 3rem;     /* 48px = Tailwind 12 */
+  --space-3xl: 4rem;     /* 64px = Tailwind 16 */
+
+  /* Cibles tactiles — guideline UX du skill, severite High :
+     44pt iOS / 48dp Android, regle WCAG Target Size pour le web,
+     et minimum 8px entre deux cibles. */
+  --tap-target: 48px;
+  --tap-gap: 8px;
+}
+
+/* ------------------------------------------------------------------ */
+/* DARK — derive de la palette claire, puis mesure (14 paires)         */
+/* Le style Flat Design est taggue "Dark supported" : schema requis.   */
+/* ------------------------------------------------------------------ */
+.dark {
+  --background: #0c1a12;             /* vs foreground : 15.96:1 */
+  --foreground: #e8f5ec;
+  --card: #12241a;                   /* vs foreground : 14.47:1 */
+  --card-foreground: #e8f5ec;
+  --muted: #1b2e23;
+  --muted-foreground: #a7c0b0;       /* 9.22:1 background / 8.36:1 card */
+
+  --primary: #22c55e;                /* #052e16 dessus : 6.54:1 */
+  --primary-foreground: #052e16;
+  --secondary: #16a34a;
+  --secondary-foreground: #0c1a12;   /* 5.44:1 — PAS #e8f5ec (2.94:1) ni #fff (3.30:1) */
+  --accent: #38bdf8;                 /* #082f49 dessus : 6.48:1 */
+  --accent-foreground: #082f49;
+  --destructive: #f87171;            /* #450a0a dessus : 5.84:1 */
+  --destructive-foreground: #450a0a;
+
+  --border: #2a4234;                 /* decoratif : 1.49:1, assume */
+  --border-strong: #7fa88c;          /* 6.72:1 background / 6.10:1 card */
+  --input: #7fa88c;
+  --ring: #22c55e;                   /* 7.86:1 sur background */
+
+  /* Espacement, rayons et cibles tactiles herites de :root.
+     En dark, la separation des calques passe par le fond et la bordure,
+     jamais par l'ombre (Flat Design : "No gradients/shadows"). */
+}
+
+/* ------------------------------------------------------------------ */
+/* Tailwind v4 — theme non inline : EMET les variables dans :root et   */
+/* genere les utilitaires rounded-sm / rounded-md / rounded-lg.        */
+/* Les rayons ne changent pas entre light et dark, donc pas de doublon. */
+/* ------------------------------------------------------------------ */
+@theme {
+  --radius-sm: 6px;
+  --radius-md: 8px;    /* .input  */
+  --radius-lg: 12px;   /* .card   */
+}
+
+/* ------------------------------------------------------------------ */
+/* Tailwind v4 — theme inline : les utilitaires referencent directement */
+/* les variables runtime, donc le basculement .dark fonctionne.        */
+/* ------------------------------------------------------------------ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Rubik = heading, Nunito Sans = body (appariement "E-commerce Clean") */
+  --font-heading: var(--font-rubik), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+@layer base {
+  /* Bordure par defaut sur le token CONFORME, pas --border (1.16:1).
+     Sans effet de bord : border-color n'agit que si border-width > 0. */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border-strong);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    /* var(--font-nunito) et non var(--font-body) : avec @theme inline,
+       Tailwind n'emet pas --font-body dans :root. */
+    font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-rubik), ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
+  /* Focus visible — l'original genere etait un halo a 12.5% d'alpha
+     (`box-shadow: 0 0 0 3px #15803D20`), quasi invisible : il violait
+     l'anti-pattern "Invisible focus states" du propre MASTER.md.
+     Anneau plein, 5.02:1 sur carte en light / 7.86:1 en dark. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* 16px minimum sur les champs : empeche le zoom force d'iOS au focus. */
+  input, select, textarea {
+    font-size: 16px;
+  }
+
+  /* Cibles tactiles 48px — VOLONTAIREMENT limite aux controles reels.
+     Ne PAS l'appliquer a tous les <a> : un lien inline dans un paragraphe
+     doit rester dans le flux du texte, sinon l'interlignage explose.
+     Les liens utilises comme controles prennent la classe .tap-target. */
+  button,
+  [role="button"],
+  summary,
+  .tap-target {
+    min-height: var(--tap-target);
+    cursor: pointer; /* anti-pattern "Missing cursor:pointer" */
+  }
+
+  /* Ecart minimum entre cibles : 8px (guideline UX, severite Medium). */
+  .tap-group > * + * {
+    margin-inline-start: var(--tap-gap);
+  }
+
+  /* Motion 3/10 — le skill fournit un scroll reveal GSAP 300-400ms avec garde
+     matchMedia('(prefers-reduced-motion: reduce)'). Exigence de la checklist
+     pre-livraison et de la section Motion du MASTER.md : tout est neutralise. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Utilitaires — specs composants corrigees de MASTER.md               */
+/* ------------------------------------------------------------------ */
+@layer components {
+  /* Flat Design : la carte se separe par la BORDURE, pas par l'ombre.
+     Deux corrections vs la sortie du generateur :
+       1. background #F0FDF4 == --background : la carte etait invisible
+          contre la page. On prend --card (#FFFFFF).
+       2. hover en translateY(-2px) + shadow-lg : les Key Effects du style
+          disent "simple hover (color/opacity shift)". Shift de bordure. */
+  .card {
+    background-color: var(--card);
+    color: var(--card-foreground);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    transition: border-color 200ms ease, background-color 200ms ease;
+  }
+
+  .card-interactive {
+    cursor: pointer;
+  }
+
+  .card-interactive:hover {
+    border-color: var(--border-strong);
+  }
+
+  /* Bordure de champ sur --input (#6B8F76) : l'original #E2E8F0 ne faisait
+     que 1.23:1 sur carte — champ non delimite, echec WCAG 1.4.11.
+     Critique sur un tunnel de checkout. */
+  .input {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: var(--card);
+    color: var(--card-foreground);
+    border: 1px solid var(--input);
+    border-radius: var(--radius-md);
+    font-size: 16px;
+    transition: border-color 200ms ease, box-shadow 200ms ease;
+  }
+
+  .input::placeholder {
+    color: var(--muted-foreground);
+  }
+
+  /* Jamais de placeholder seul : la guideline UX du skill (severite High)
+     impose un <label> avec for, ou un input encapsule. */
+  .input:focus-visible {
+    border-color: var(--ring);
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* CTA primaire — "Commander", blanc sur --primary : 5.02:1 light.
+     En dark, --primary est #22C55E avec --primary-foreground #052E16 : 6.54:1. */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    min-height: var(--tap-target);
+    padding: 12px 24px;
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-family: var(--font-rubik), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 200ms ease, opacity 200ms ease;
+  }
+
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* CTA secondaire / outline — la bordure DOIT etre --border-strong :
+     c'est elle qui delimite le composant (3:1 minimum). */
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    min-height: var(--tap-target);
+    padding: 12px 24px;
+    background-color: transparent;
+    color: var(--primary);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    font-family: var(--font-rubik), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 200ms ease, border-color 200ms ease;
+  }
+
+  .btn-outline:hover {
+    background-color: var(--muted);
+    border-color: var(--primary);
+  }
+
+  /* Ombres reservees aux CALQUES FLOTTANTS. Le generateur appliquait
+     --shadow-md/lg/xl sur .card et les boutons alors que le style retenu est
+     Flat Design ("No gradients/shadows"). Contradiction tranchee : l'ombre ne
+     reste que la ou l'elevation porte une information fonctionnelle. */
+  .overlay {
+    box-shadow: 0 10px 15px rgb(0 0 0 / 0.1);
+  }
+}

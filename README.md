@@ -51,6 +51,29 @@ python3 .agents/skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system
 
 Tune the output with `--variance`, `--motion`, `--density` (1–10), or emit `--json` / `--format markdown`.
 
+## Design system du projet
+
+`design-system/quick-commerce-cotonou/` — quick commerce (epicerie + pharmacie + livraison, marche
+beninois), stack **Next.js + shadcn/ui + Tailwind v4**.
+
+- `MASTER.md` — source de verite : palette light **et** dark mesuree, typographie, espacement,
+  specs composants, pattern de page, motion, anti-patterns, contraintes locales (mobile money,
+  FCFA, WhatsApp, cibles tactiles), et `## Corrections verifiees` qui trace les 13 ecarts corriges
+  entre la sortie brute du generateur et ce fichier.
+- `globals.css` — tokens prets a copier vers `app/globals.css`. Compile sous Tailwind v4.3.5 ;
+  les 15 utilitaires de couleur/typo/rayon et les 8 classes composants sont verifies generes.
+
+Genere avec :
+
+```bash
+python3 .agents/skills/ui-ux-pro-max/scripts/search.py \
+  "grocery delivery pharmacy fast local commerce" \
+  --design-system --persist --motion 3 --density 7 \
+  -p "Quick Commerce Cotonou" --output-dir .
+```
+
+> `MASTER.md` est corrige et annote a la main : ne pas le regenerer avec `--force`.
+
 ### Maintenance
 
 ```bash

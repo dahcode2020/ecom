@@ -42,4 +42,28 @@ Rules when using the search script:
 Sibling skills: `design`, `design-system`, `ui-styling`, `brand`, `banner-design`, `slides` —
 each has its own `SKILL.md` in `.agents/skills/<name>/`.
 
+## Ce projet a un design system — le lire avant d'ecrire du UI
+
+`design-system/quick-commerce-cotonou/MASTER.md` est la source de verite. Produit : **quick
+commerce** (epicerie + pharmacie + livraison rapide, marche beninois). Stack : **Next.js +
+shadcn/ui + Tailwind v4**.
+
+Regles de consultation, dans l'ordre impose par le skill :
+
+1. Lire `design-system/quick-commerce-cotonou/MASTER.md`.
+2. Pour une page precise, chercher `design-system/quick-commerce-cotonou/pages/<page>.md`.
+   S'il existe, **il prime** sur le Master. Sinon, appliquer le Master seul.
+3. `design-system/quick-commerce-cotonou/globals.css` contient les tokens prets a copier vers
+   `app/globals.css`. Il compile sous Tailwind v4.3.5 — ne pas le reecrire a la main.
+
+**Lire aussi `## Corrections verifiees` en fin de MASTER.md.** La sortie brute du generateur
+comportait 13 ecarts corriges et etayes (typographie incoherente, bordures de champs a 1.16:1 et
+1.23:1 donc sous le seuil WCAG 1.4.11, focus ring quasi invisible, carte dont le fond etait egal a
+celui de la page, CTA B2B « Contact Sales / Get Quote » sur un produit grand public, ombres en
+contradiction avec le style Flat Design retenu). Ne pas « reparer » ces corrections en revenant aux
+valeurs generees.
+
+Ne pas regenerer MASTER.md avec `--force` : il est corrige et annote a la main. Le skill l'interdit
+d'ailleurs sans autorisation explicite de l'utilisateur.
+
 Installation, verification and update commands: see `README.md`.
