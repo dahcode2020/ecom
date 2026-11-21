@@ -397,7 +397,13 @@ pour ce projet.
 - `lang="fr"` sur `<html>`. Francais par defaut.
 - Prevoir l'extension vers le **Fon** et le **Yoruba** sans refonte : ne jamais coder en dur des
   largeurs de libelles, les chaines passent par un catalogue i18n.
-- Devise **XOF / FCFA**, pas de symbole `€` ni `$`. Telephone au format `+229 XX XX XX XX`.
+- Devise **XOF / FCFA**, pas de symbole `€` ni `$`.
+- **Telephone : accepter 8 OU 10 chiffres.** Le format `+229 XX XX XX XX` note initialement ici
+  correspond a l'**ancien** plan de numerotation ; le Benin est passe a un plan a **10 chiffres**
+  (numeros existants prefixes, notamment par `01`). Un validateur borne a 8 chiffres rejette des
+  numeros valides et fait perdre la commande au checkout. Implementations de reference :
+  `formatBeninPhone` et `validateBeninPhone` dans `lib/format.ts`, toutes deux testees sur les deux
+  longueurs. Affichage par paires : `+229 01 97 12 34 56`.
 - Adresses : pas de code postal fiable au Benin → le formulaire s'appuie sur **ville + quartier +
   repere** (Cotonou, Calavi, Abomey-Calavi…), et non sur un champ « code postal » obligatoire.
 

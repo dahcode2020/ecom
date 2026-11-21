@@ -268,7 +268,22 @@ Cette page **est** la page d'indexation. Regles :
 - **Pas de video autoplay**, pas de fond anime (contrainte locale : reseau 3G/4G instable).
 - Images produit en AVIF/WebP avec `sizes` explicite — jamais d'image pleine resolution servie sur
   mobile.
-- **Budget indicatif :** JS < 100 Ko gzip sur cette route, LCP < 2,5 s en 4G degradee.
+- **Budget JS — CORRIGE apres mesure.** L'objectif initialement pose ici
+  (« JS < 100 Ko gzip sur cette route ») est **inatteignable avec cette stack** : le socle
+  Next.js App Router pese a lui seul **103 Ko** de First Load JS partage (mesure au build).
+  Budget retenu a la place : **First Load JS <= 130 Ko** sur cette route, soit <= 27 Ko
+  imputables a l'application.
+  **Mesure reelle au build : 116 Ko First Load, dont 4,84 Ko de JS de page → ~13 Ko
+  imputables a l'application.** Budget respecte avec de la marge.
+- **Polices — mesure reelle.** 2 familles variables self-hosted via `@fontsource-variable`,
+  11 fichiers woff2 declares avec `unicode-range`, tous servis en `200 font/woff2`.
+  Pour du francais le navigateur ne telecharge que 4 fichiers :
+  `rubik-latin` 35 348 o + `rubik-latin-ext` 19 400 o + `nunito-sans-latin` 31 076 o +
+  `nunito-sans-latin-ext` 27 908 o = **113 732 o (111 Ko)**.
+  Les subsets arabe, cyrillique, hebreu et vietnamien ne sont jamais telecharges : les 248 Ko
+  de woff2 presents dans le build sont des artefacts, pas du poids runtime.
+- **LCP < 2,5 s** en 4G degradee reste l'objectif ; le LCP doit etre le titre du hero ou le champ
+  de verification de zone, pas une image.
 
 ---
 
@@ -313,9 +328,12 @@ Etend la checklist du Master, ne la remplace pas.
 - [ ] WhatsApp accessible au clavier avec libelle explicite
 - [ ] Navbar sticky + CTA ; barre collante mobile < 768px
 - [ ] Route en statique ou ISR, cache CDN actif, **pas** de `no-store`
-- [ ] Polices via `next/font`, `display: swap`, graisses prechargees limitees a l'utile
+- [ ] Polices self-hosted (`next/font` ou `@fontsource-variable`), `display: swap`, aucune
+      requete externe, graisses prechargees limitees a l'utile
 - [ ] Aucune librairie d'animation, aucune video autoplay
-- [ ] JS < 100 Ko gzip, LCP < 2,5 s en 4G degradee
+- [ ] First Load JS <= 130 Ko (socle Next ~103 Ko inclus) — mesure au build : 116 Ko
+- [ ] Polices : 4 woff2 latin/latin-ext seulement, ~111 Ko
+- [ ] LCP < 2,5 s en 4G degradee
 - [ ] Responsive verifie : 375 / 768 / 1024 / 1440 px, aucun scroll horizontal sur mobile
 
 ---

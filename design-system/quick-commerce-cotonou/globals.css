@@ -24,11 +24,25 @@
  *
  * ---------------------------------------------------------------------------
  * POLICES
- *   `--font-rubik` et `--font-nunito` sont injectes par next/font (options
- *   `variable:` dans app/layout.tsx). Ce fichier ne les definit donc PAS : il
- *   les consomme. D'ou l'usage de var(--font-rubik) dans @layer base — avec
- *   `@theme inline`, Tailwind n'emet pas la variable intermediaire dans :root,
- *   donc `var(--font-heading)` y serait indefinie.
+ *   Rubik (heading) + Nunito Sans (body), appariement "E-commerce Clean".
+ *
+ *   Mecanisme de chargement : **@fontsource-variable** (self-hosted depuis
+ *   node_modules), importe dans app/layout.tsx. Ce fichier definit donc
+ *   --font-rubik et --font-nunito dans :root.
+ *
+ *   ECART DOCUMENTE vs MASTER.md : le Master recommande `next/font/google`.
+ *   Or `fonts.googleapis.com` est injoignable dans cet environnement de build,
+ *   donc next/font/google echoue a la compilation. Fontsource est une voie de
+ *   self-hosting equivalente, et elle satisfait mieux encore la guideline
+ *   `nextjs` du skill ("Use next/font" / DON'T "External font links") :
+ *   zero requete externe, au build comme au runtime.
+ *   Le CHOIX des familles est inchange — seule la livraison differe.
+ *   Dans un environnement reseau normal, les deux mecanismes sont valides ;
+ *   remplacer alors les valeurs ci-dessous par celles injectees par next/font.
+ *
+ *   D'ou l'usage de var(--font-rubik) dans @layer base — avec `@theme inline`,
+ *   Tailwind n'emet pas la variable intermediaire dans :root, donc
+ *   `var(--font-heading)` y serait indefinie.
  *
  * ---------------------------------------------------------------------------
  * ESPACEMENT
@@ -102,6 +116,14 @@
      et minimum 8px entre deux cibles. */
   --tap-target: 48px;
   --tap-gap: 8px;
+
+  /* Polices self-hosted via @fontsource-variable (voir note POLICES en tete).
+     Noms de familles verifieurs dans node_modules :
+       @fontsource-variable/rubik       -> 'Rubik Variable'       (wght 300..900)
+       @fontsource-variable/nunito-sans -> 'Nunito Sans Variable' (wght 200..1000)
+     Ces axes correspondent a ceux du catalogue google-fonts.csv du skill. */
+  --font-rubik: 'Rubik Variable';
+  --font-nunito: 'Nunito Sans Variable';
 }
 
 /* ------------------------------------------------------------------ */

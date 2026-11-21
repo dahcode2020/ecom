@@ -78,6 +78,39 @@ python3 .agents/skills/ui-ux-pro-max/scripts/search.py \
 
 > `MASTER.md` est corrige et annote a la main : ne pas le regenerer avec `--force`.
 
+## Application
+
+Next.js 15 (App Router) + Tailwind v4, polices self-hosted `@fontsource-variable`, icones Lucide.
+
+```bash
+npm install
+npm run build && npm start     # production — recommande pour l'apercu
+npm run dev                    # developpement (HMR)
+```
+
+| Route | Rendu | Cache verifie en production | Spec |
+|---|---|---|---|
+| `/` | Statique / ISR | `s-maxage=60, stale-while-revalidate` + `x-nextjs-cache: HIT` | `pages/landing.md` |
+| `/checkout` | Dynamique | `no-store, max-age=0, must-revalidate` + `Pragma: no-cache` | `pages/checkout.md` |
+
+Les deux routes ont des politiques de cache **opposees**, mesurees via `curl -D -`.
+`next.config.ts` pose le `no-store` sur `/checkout` : l'App Router ne permet pas d'emettre des
+en-tetes de reponse depuis une page.
+
+Build : `/` 4,84 Ko de JS de page (116 Ko First Load), `/checkout` 8,63 Ko (120 Ko First Load),
+socle Next.js 103 Ko. Polices : 4 woff2 latin/latin-ext telecharges pour du francais, 113 732 o.
+
+> ⚠️ **`npm run dev` peut renvoyer un 500 sur `/`** avec Next 15.5.29 : apres recompilation HMR le
+> dev server echoue sur `segment-explorer-node.js` (« Could not find the module … in the React
+> Client Manifest »), un bug des devtools Next en mode dev. Le build de production n'est pas
+> affecte — utiliser `npm run build && npm start` pour l'apercu.
+
+> Les polices passent par `@fontsource-variable` et non `next/font/google` : `fonts.googleapis.com`
+> est injoignable dans cet environnement de build (verifie). Le choix des familles — Rubik /
+> Nunito Sans — est inchange ; seul le mecanisme de livraison differe, et il satisfait mieux
+> encore la guideline `nextjs` du skill (« Use next/font » / DON'T « External font links »)
+> puisqu'il n'y a aucune requete externe, ni au build ni au runtime.
+
 ### Maintenance
 
 ```bash

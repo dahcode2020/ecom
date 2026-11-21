@@ -1,0 +1,11 @@
+/*
+ * Point d'entree CSS de l'application.
+ *
+ * VOLONTAIREMENT un seul @import : la source de verite des tokens est
+ * `design-system/quick-commerce-cotonou/globals.css`, qui contient deja
+ * `@import "tailwindcss";`. Ne PAS re-importer Tailwind ici — cela dupliquerait
+ * le preflight et les couches.
+ *
+ * Modifier les tokens dans le fichier du design system, pas ici.
+ */
+@import "../design-system/quick-commerce-cotonou/globals.css";
