@@ -36,7 +36,13 @@ export default function CheckoutPage() {
           le <main> ci-dessous — pas lui-meme. */}
       <a
         href="#contenu"
-        className="bg-primary focus:text-primary fixed top-2 left-2 z-50 -translate-y-24 rounded-md px-4 py-2 font-semibold text-white no-underline focus:translate-y-0"
+        // DEUX bugs corriges. (1) `text-white` sur `bg-primary` : 2.28:1 en theme
+        // sombre (--primary #22C55E) — le lien d'evitement, seul point d'entree
+        // clavier de la page, etait le moins lisible de tous. (2) `focus:text-primary`
+        // SANS changer le fond rendait le texte primary-sur-primary, donc 1:1 :
+        // invisible au moment precis ou il apparait. Le swap complet est mesure
+        // conforme : clair 5.02:1, sombre 7.13:1.
+        className="bg-primary text-primary-foreground focus:bg-card focus:text-primary fixed top-2 left-2 z-50 -translate-y-24 rounded-md px-4 py-2 font-semibold no-underline focus:translate-y-0"
       >
         Aller au formulaire
       </a>

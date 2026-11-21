@@ -680,3 +680,96 @@ Audit de conformité : **63/63** (`/tmp/audit7.py` — crash SSR, repli solide a
 valeurs des tokens vérifiées numériquement, les deux replis d'accessibilité, règle de mise en page
 servie et scopée, périmètre contenu vs chrome, non-régression bento). L'audit cumulé du bento reste à **86/92**, avec les mêmes 6 faux
 négatifs connus du script (minification, `data-reveal="true"`, `srcSet` en camelCase, images `fill`).
+
+---
+
+## AMENDEMENT — unification éditoriale et correctifs de cohérence
+
+Passage demandé en termes ouverts (« utilise tes propres compétences pour améliorer le design »).
+Le diagnostic n'a pas porté sur le haut de la page, déjà refondu, mais sur ce qui suivait.
+
+### Diagnostic : la page parlait deux langues
+
+Le hero, les rayons et la vitrine étaient en bento éditorial — h1 en `.display` (clamp 36 → 68 px,
+graisse 800, −0.03em). Puis **les cinq sections suivantes** retombaient sur un autre système :
+
+| Avant | Après |
+|---|---|
+| h2 en `text-2xl sm:text-3xl` (24 → 30 px) | `.display-sm` (clamp 25,6 → 41,6 px) |
+| Rupture hero → sections : **68 px → 30 px** | 68 px → 41,6 px, échelle continue |
+| `.display-sm` utilisée **2 fois** dans tout le site | **12** titres de section |
+| Aucun sur-titre ; chapo présent sur 3 sections sur 6 | **10** sur-titres `.eyebrow`, chapo systématique |
+| Tuiles en `card` (rayon 12 px, pas de survol) | `bento-tile` (rayon 16 px, transition de survol) — **24** tuiles |
+| Étapes en pastilles de 40 px | Numéraux éditoriaux clamp 44 → 72 px + filet |
+| CTA final : bandeau `bg-primary` pleine largeur | Dalle `.tile-inverted`, bookend du hero |
+
+`components/section-header.tsx` (Server Component, **zéro JS client**) impose désormais un motif
+unique : sur-titre + titre + chapo + action alignée sur la ligne de base.
+
+### Cinq bugs trouvés en auditant le design
+
+**1. Le site mentait sur la livraison offerte.** Le hero annonçait « offerte dès **15 000** FCFA »
+pendant que `checkout-flow.tsx` appliquait `subtotal >= **10000**` et que deux autres sections
+affichaient 10 000. Le client se voyait promettre une condition *moins* avantageuse que la réalité.
+`FREE_DELIVERY_THRESHOLD` et `FREE_DELIVERY_LABEL` sont maintenant la source de vérité unique, lue à
+la fois par la logique de prix et par les trois affichages.
+
+**2. Le tableau des frais était faux.** Il recopiait quatre lignes à la main — dont
+« Abomey-Calavi **1 000** FCFA » alors qu'Abomey-Calavi centre est à **1 200** dans `zones`.
+`deliveryFeeSummary` dérive désormais le tableau des données : regroupement des quartiers servis par
+ville, bornes de délais extraites des libellés, **fourchette honnête** (min–max) à la place de
+l'à-plat. 12 quartiers couverts sur 12. Placé après `zones` pour la TDZ (que `tsc --noEmit` ne
+signale pas).
+
+**3. Blanc codé en dur sur fond primary — 7 endroits.** `text-white` sur `bg-primary` vaut 5.02:1 en
+clair mais **2.28:1 en mode sombre**, où `--primary` est `#22C55E`. Touchait le logo de l'en-tête, le
+badge panier, l'icône de confirmation de commande, l'étape courante du checkout, sa puce numérotée
+(`bg-white/20 text-white`), le lien d'évitement **des deux pages**, et le logo du pied de page.
+Le token `--primary-foreground` existait déjà (#FFFFFF clair / #052E16 sombre) et était correctement
+employé à 2 endroits seulement — la preuve que le motif était connu mais pas appliqué partout.
+**28 usages du token, 0 blanc en dur restant.** Les `text-white` conservés sont uniquement ceux posés
+sur une image voilée à 0.78 (7.15:1 mesuré).
+
+**4. Le lien d'évitement devenait invisible au focus.** `focus:text-primary` **sans** changer le fond
+donnait du primaire sur primaire, soit 1:1 — illisible au moment précis où le seul point d'entrée
+clavier de la page apparaît. Le swap complet (`focus:bg-card focus:text-primary`) est mesuré conforme :
+5.02:1 clair, 7.13:1 sombre.
+
+**5. Un numéro de téléphone mort était affiché.** Le pied de page écrivait « WhatsApp · **+229 00 00
+00 00** » en dur alors que le lien `wa.me` pointait, lui, vers le vrai numéro. Le client lisait un
+numéro qui n'aboutit nulle part sur le canal de commande dominant au Bénin. `lib/contact.ts`
+interdisait pourtant tout numéro écrit en dur — celui-ci avait échappé au nettoyage antérieur parce
+que l'audit cherchait la chaîne `22900000000` **sans espaces**, que ce formatage espacé ne contient
+pas. **Leçon : auditer la valeur affichée, pas seulement l'URL.**
+
+Corrigés au passage : `bg-white/0` (blanc à 0 % d'opacité, un no-op) ; « Voir tout le catalogue » qui
+menait à l'ancre `#epicerie` de la même page au lieu de `/catalogue` ; le camion du pied de page
+redessiné à la main alors que `icon.tsx` expose la clé `truck`.
+
+### Accessibilité
+
+`role="list"` ajouté au `<ol>` des étapes : le preflight de Tailwind pose `list-style: none`, et
+VoiceOver cesse alors d'annoncer la liste — la numérotation disparaissait pour les seuls utilisateurs
+pour qui l'ordre compte. Les numéraux `01/02/03` sont en `aria-hidden` puisque le `<ol>` annonce déjà
+la position (sinon ils seraient lus deux fois).
+
+**18 paires de couleurs vérifiées par calcul dans les deux thèmes** (`/tmp/contrast.py`, tokens lus
+dans `globals.css`), toutes conformes — dont eyebrow 4.79/7.86, numeral 5.02/7.13 (texte large, seuil
+3:1), dalle inversée 8.70/15.96, chapo inversé 7.52/7.06. Trois combinaisons **interdites** et
+évitées : `--secondary` sur `--card` (2.28:1 clair), `--primary` sur `--inverted-bg` (1.82:1),
+`--primary` sur `--muted` (4.34:1 clair) — d'où la règle descendante `.tile-inverted .eyebrow` qui
+bascule le sur-titre sur `--inverted-accent` (6.49/6.35) et rend l'erreur impossible au lieu de la
+corriger composant par composant.
+
+### Coût
+
+| Mesure | Avant | Après | Δ |
+|---|---|---|---|
+| First Load JS `/` | 124 Ko | **124 Ko** | **0** (SectionHeader est un Server Component) |
+| CSS gzip | 9 141 o | **9 336 o** | +195 o |
+| Landing gzip | 30 421 o | **31 137 o** | +716 o |
+| `/catalogue`, `/suivi`, `/checkout` | — | — | ±0, +0, +11 o |
+
+Audits : **37/37** (unification éditoriale, données calculées, accessibilité, poids et cache),
+**63/63** (Liquid Glass), **18/18** (contrastes), et le cumul bento reste à **86/92** avec les mêmes
+6 faux négatifs connus.

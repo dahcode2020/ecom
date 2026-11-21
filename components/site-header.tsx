@@ -46,7 +46,7 @@ export function SiteHeader({
           className="font-heading text-primary flex shrink-0 items-center gap-2 text-lg font-bold no-underline"
         >
           <span className="bg-primary flex h-9 w-9 items-center justify-center rounded-md">
-            <Icon name="truck" className="h-5 w-5 text-white" strokeWidth={2.25} />
+            <Icon name="truck" className="h-5 w-5 text-primary-foreground" strokeWidth={2.25} />
           </span>
           <span className="text-foreground hidden sm:inline">Kpɔ́tɔ</span>
         </Link>
@@ -115,7 +115,7 @@ export function SiteHeader({
                   checkout), pas de live region concurrente ici. */}
               <span
                 aria-hidden="true"
-                className="bg-primary font-heading absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold text-white"
+                className="bg-primary font-heading absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold text-primary-foreground"
               >
                 {formatNumber(cartCount)}
               </span>

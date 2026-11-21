@@ -6,12 +6,15 @@ import { Icon, PaymentIcon } from './icon';
 import { ZoneCheck } from './zone-check';
 import {
   categories,
+  deliveryFeeSummary,
+  FREE_DELIVERY_LABEL,
   paymentMethods,
   popularProducts,
   products,
   productsByCategory,
   zones,
 } from '@/lib/data';
+import { SectionHeader } from './section-header';
 import { ProductTile } from './product-tile';
 import { formatXOF, frenchCardinalCapitalized } from '@/lib/format';
 import { SUPPORT_WHATSAPP } from '@/lib/contact';
@@ -181,7 +184,7 @@ export function Hero() {
             </p>
             <p className="text-foreground text-sm font-semibold">de frais de livraison</p>
             <p className="text-muted-foreground text-xs">
-              offerte dès {formatXOF(15000)} d’achat
+              offerte dès {FREE_DELIVERY_LABEL} d’achat
             </p>
           </div>
         </div>
@@ -304,20 +307,28 @@ export function Categories() {
 /* ------------------------------------------------------------------ */
 export function PopularProducts() {
   return (
-    <section className="border-border border-y bg-white/0" aria-labelledby="h-popular">
+    // `bg-white/0` retire : blanc a 0 % d'opacite est un no-op, la classe ne
+    // faisait rien et encombrait le DOM.
+    <section className="border-border border-y" aria-labelledby="h-popular">
       <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 md:py-16">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 id="h-popular" className="font-heading text-foreground text-2xl font-bold sm:text-3xl">
-              Les plus commandés
-            </h2>
-            <p className="text-muted-foreground mt-2">Prix en FCFA, livraison incluse dès 10 000 FCFA.</p>
-          </div>
-          <Link href="#epicerie" className="btn-outline min-h-12 px-4 text-sm">
-            Voir tout le catalogue
-            <Icon name="chevronRight" className="h-4 w-4" />
-          </Link>
-        </div>
+        <SectionHeader
+          eyebrow="Populaires"
+          titleId="h-popular"
+          title="Les plus commandés ce mois-ci"
+          // Effectif CALCULE, pas recopie : le nombre de tuiles rendues vient de
+          // `popularProducts`, donc le texte ne peut pas diverger de la grille.
+          // Le seuil de livraison vient de la source de verite unique.
+          lede={`${popularProducts.length} références, prix en FCFA, livraison offerte dès ${FREE_DELIVERY_LABEL} d’achat.`}
+          action={
+            // Cible CORRIGEE : le libelle disait « Voir tout le catalogue » mais
+            // l'ancre #epicerie ne menait qu'a la section epicerie de cette meme
+            // page. Un libelle qui promet le catalogue doit ouvrir /catalogue.
+            <Link href="/catalogue" className="btn-outline min-h-12 px-4 text-sm">
+              Voir tout le catalogue
+              <Icon name="chevronRight" className="h-4 w-4" />
+            </Link>
+          }
+        />
 
         {/* Grille : 2 colonnes a 375px, 3 en tablette, 4 en desktop. */}
         <div className="mt-8 grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
@@ -357,31 +368,55 @@ const STEPS = [
 export function HowItWorks() {
   return (
     <section className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 md:py-16" aria-labelledby="h-how">
-      <h2 id="h-how" className="font-heading text-foreground text-2xl font-bold sm:text-3xl">
-        Comment ça marche
-      </h2>
+      <SectionHeader
+        eyebrow="Trois étapes"
+        titleId="h-how"
+        title="Comment ça marche"
+        lede="Vérifiez votre quartier, composez votre panier, payez comme vous en avez l’habitude. Délai et frais sont affichés avant de commander."
+      />
 
       {/* Structure de funnel-3-step-conversion, SANS sa strategie de couleur :
           le catalogue propose « Step 1 (Red/Problem) », ce qui entrerait en
           collision avec --destructive reserve aux erreurs. Etapes en --primary.
-          Progressive disclosure : une phrase par etape, pas un paragraphe. */}
-      <ol className="mt-8 grid gap-4 md:grid-cols-3 md:gap-6">
+          Progressive disclosure : une phrase par etape, pas un paragraphe.
+
+          `role="list"` n'est PAS decoratif : le preflight de Tailwind pose
+          `list-style: none`, et VoiceOver cesse alors d'annoncer <ol> comme une
+          liste. Sans cet attribut la numerotation des etapes disparait pour les
+          lecteurs d'ecran — justement ceux pour qui l'ordre compte. */}
+      <ol role="list" className="mt-10 grid gap-4 md:grid-cols-3 md:gap-6" data-reveal-group="etapes">
         {STEPS.map((step) => (
-          <li key={step.n} className="card relative p-6">
-            <div className="flex items-center gap-3">
-              <span className="font-heading bg-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-bold text-white">
-                {step.n}
+          <li key={step.n} className="bento-tile flex flex-col p-6" data-reveal>
+            {/* Numeral editorial + filet. Remplace la pastille de 40 px : le
+                chiffre passe de 16 px a clamp(44 -> 72) px, ce qui aligne cette
+                section sur l'echelle du hero au lieu de la subir.
+                `aria-hidden` car le <ol role="list"> annonce deja la position :
+                lu en plus, le chiffre serait annonce deux fois.
+                Contraste : --primary sur --card = 5.02:1 (clair) / 7.13:1
+                (sombre). Texte large (>= 32 px), donc seuil AA 3:1 — conforme
+                avec de la marge. --secondary est interdit ici : 2.28:1. */}
+            <div className="flex items-center gap-4">
+              <span className="step-numeral" aria-hidden="true">
+                {String(step.n).padStart(2, '0')}
               </span>
-              <Icon name={step.icon} className="text-primary h-6 w-6" strokeWidth={1.75} />
+              <span className="hairline flex-1" aria-hidden="true" />
+              <span className="text-primary shrink-0">
+                <Icon name={step.icon} className="h-7 w-7" strokeWidth={1.75} />
+              </span>
             </div>
-            <h3 className="font-heading text-foreground mt-4 text-lg font-semibold">{step.title}</h3>
+
+            <h3 className="font-heading text-foreground mt-5 text-xl font-bold">{step.title}</h3>
             <p className="text-muted-foreground mt-2 text-sm">{step.text}</p>
 
             {/* Mini-CTA par etape, CTA principal en fin de bloc
-                (funnel-3-step-conversion : « Each step: mini-CTA. Final: main CTA »). */}
+                (funnel-3-step-conversion : « Each step: mini-CTA. Final: main CTA »).
+                `.link-cta` : le trait se deploye de 25 % a 100 % au survol
+                (recette motion deja tokenisee), coerent avec le hero.
+                `mt-auto` aligne les trois liens en bas des tuiles, quelle que
+                soit la longueur du texte de l'etape. */}
             <Link
               href={step.n === 1 ? '#top' : step.n === 2 ? '#h-popular' : '#zones-desservies'}
-              className="text-primary mt-4 inline-flex min-h-12 items-center gap-1.5 text-sm font-semibold no-underline"
+              className="link-cta mt-auto pt-5 text-sm"
             >
               {step.n === 1 ? 'Vérifier ma zone' : step.n === 2 ? 'Voir les produits' : 'Voir les zones'}
               <Icon name="chevronRight" className="h-4 w-4" />
@@ -390,7 +425,7 @@ export function HowItWorks() {
         ))}
       </ol>
 
-      <div className="mt-8 flex justify-center">
+      <div className="mt-10 flex justify-center">
         <Link href="/checkout" className="btn-primary px-8">
           Commander maintenant
           <Icon name="arrowRight" className="h-5 w-5" />
@@ -409,18 +444,22 @@ export function ProofBand() {
   return (
     <section id="zones-desservies" className="border-border border-t" aria-labelledby="h-proof">
       <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 md:py-16">
-        <h2 id="h-proof" className="font-heading text-foreground text-2xl font-bold sm:text-3xl">
-          Délais, frais et zones desservies
-        </h2>
         {/* Contrainte de confiance du Master : delai, frais, zones et moyens de
             paiement affiches AVANT le tunnel d'achat, pas apres. */}
-        <p className="text-muted-foreground mt-2">
-          Tout est affiché avant de commander. Aucune surprise au paiement.
-        </p>
+        <SectionHeader
+          eyebrow="Transparence"
+          titleId="h-proof"
+          title="Délais, frais et zones desservies"
+          lede="Tout est affiché avant de commander. Aucune surprise au paiement."
+        />
 
-        <div className="mt-8 grid gap-4 lg:grid-cols-3 lg:gap-6">
+        {/* `card` remplace par `bento-tile` : rayon 16 px au lieu de 12, meme
+            bordure, meme fond — mais surtout la meme transition de survol que
+            le hero et les rayons. Sans ca, le haut de la page etait editorial
+            et le bas restait generique. */}
+        <div className="mt-10 grid gap-4 lg:grid-cols-3 lg:gap-6" data-reveal-group="preuve">
           {/* Zones desservies */}
-          <div className="card p-6">
+          <div className="bento-tile p-6" data-reveal>
             <h3 className="font-heading text-foreground flex items-center gap-2 text-lg font-semibold">
               <Icon name="mapPin" className="text-primary h-5 w-5" />
               {servedZones.length} quartiers desservis
@@ -441,31 +480,42 @@ export function ProofBand() {
             </p>
           </div>
 
-          {/* Delais et frais */}
-          <div className="card p-6">
+          {/* Delais et frais — TABLEAU DESORMAIS DERIVE de `zones`.
+              Il recopiait quatre lignes a la main et l'une etait FAUSSE :
+              « Abomey-Calavi 1 000 FCFA » alors que Abomey-Calavi centre est a
+              1 200 dans les donnees. `deliveryFeeSummary` regroupe les
+              quartiers servis par ville et expose les bornes reelles, donc une
+              fourchette honnete remplace l'a-plat, et le texte ne peut plus
+              diverger des donnees. Le seuil de livraison offerte vient de la
+              meme source de verite que la logique de prix du checkout. */}
+          <div className="bento-tile p-6" data-reveal>
             <h3 className="font-heading text-foreground flex items-center gap-2 text-lg font-semibold">
               <Icon name="clock" className="text-primary h-5 w-5" />
               Frais de livraison
             </h3>
             <dl className="mt-4 space-y-3 text-sm">
-              {[
-                { k: 'Cotonou centre', v: formatXOF(500), d: '25–45 min' },
-                { k: 'Cotonou périphérie', v: formatXOF(800), d: '40–60 min' },
-                { k: 'Abomey-Calavi', v: formatXOF(1000), d: '45–75 min' },
-                { k: 'Sèmè-Podji', v: formatXOF(1500), d: '60–90 min' },
-              ].map((row) => (
-                <div key={row.k} className="flex items-baseline justify-between gap-3 border-b border-dashed pb-2 last:border-0">
+              {deliveryFeeSummary.map((row) => (
+                <div
+                  key={row.ville}
+                  className="border-border flex items-baseline justify-between gap-3 border-b border-dashed pb-2 last:border-0"
+                >
                   <dt className="text-foreground">
-                    {row.k}
-                    <span className="text-muted-foreground block text-xs">{row.d}</span>
+                    {row.ville}
+                    <span className="text-muted-foreground block text-xs">
+                      {row.quartiers} quartier{row.quartiers > 1 ? 's' : ''} · {row.etaMin}–{row.etaMax} min
+                    </span>
                   </dt>
-                  <dd className="font-heading shrink-0 font-semibold">{row.v}</dd>
+                  <dd className="font-heading shrink-0 font-semibold">
+                    {row.feeMin === row.feeMax
+                      ? formatXOF(row.feeMin)
+                      : `${formatXOF(row.feeMin)} – ${formatXOF(row.feeMax)}`}
+                  </dd>
                 </div>
               ))}
             </dl>
             <p className="text-primary mt-4 flex items-center gap-2 text-sm font-semibold">
               <Icon name="check" className="h-4 w-4" />
-              Livraison offerte dès 10 000 FCFA
+              Livraison offerte dès {FREE_DELIVERY_LABEL}
             </p>
           </div>
 
@@ -474,7 +524,7 @@ export function ProofBand() {
               controles precedent/suivant et rendu statique sous reduced-motion
               si un carrousel est utilise ; la contrainte locale « pas de
               carrousel lourd » et le style cost:low imposent la rangee fixe. */}
-          <div className="card p-6">
+          <div className="bento-tile p-6" data-reveal>
             <h3 className="font-heading text-foreground flex items-center gap-2 text-lg font-semibold">
               <Icon name="lock" className="text-primary h-5 w-5" />
               Moyens de paiement
@@ -509,14 +559,16 @@ export function ProofBand() {
           </div>
         </div>
 
-        {/* Avis : note + quartier, pas seulement un prenom. */}
-        <div className="mt-8 grid gap-4 md:grid-cols-3 md:gap-6">
+        {/* Avis : note + quartier, pas seulement un prenom.
+            `bg-muted` INTERDIT sur le sur-titre d'une tuile en theme clair
+            (--primary n'y donne que 4.34:1) ; ici aucun eyebrow, donc aucun risque. */}
+        <div className="mt-6 grid gap-4 md:grid-cols-3 md:gap-6" data-reveal-group="avis">
           {[
             { name: 'Rodrigue A.', zone: 'Cadjèhoun', stars: 5, text: 'Commandé à 19 h, livré en 32 minutes. Le riz et les tomates étaient frais.' },
             { name: 'Sègla M.', zone: 'Zogbadjè', stars: 5, text: 'Le paiement MoMo a pris du temps mais l’application m’a prévenue. Rien à redire.' },
             { name: 'Fatima B.', zone: 'Fidjrossè', stars: 4, text: 'Pratique pour la pharmacie. J’aimerais plus de références pour bébés.' },
           ].map((review) => (
-            <figure key={review.name} className="card p-6">
+            <figure key={review.name} className="bento-tile flex flex-col p-6" data-reveal>
               <div className="text-primary flex gap-0.5" aria-label={`${review.stars} sur 5`}>
                 {Array.from({ length: review.stars }).map((_, i) => (
                   <Icon key={i} name="star" className="h-4 w-4 fill-current" />
@@ -539,32 +591,47 @@ export function ProofBand() {
 /* ------------------------------------------------------------------ */
 export function FinalCta() {
   return (
-    <section className="bg-primary" aria-labelledby="h-final-cta">
-      <div className="mx-auto max-w-[1200px] px-4 py-12 text-center sm:px-6 md:py-16">
-        <h2 id="h-final-cta" className="font-heading text-2xl font-bold text-white text-balance sm:text-3xl">
+    // DALLE INVERSEE, et non plus un bandeau `bg-primary` pleine largeur.
+    //
+    // DEUX RAISONS. (1) Contraste : l'ancien bandeau codait `text-white` en dur
+    // sur `bg-primary`. En theme clair, blanc sur #15803D = 5.02:1, conforme ;
+    // mais en theme sombre `--primary` vaut #22C55E et blanc ne donne plus que
+    // **2.28:1** — le texte principal du dernier CTA devenait illisible pour
+    // quiconque utilise le mode sombre. Le Master avait deja mesure et consigne
+    // cette interdiction (« blanc sur #22C55E = 2.28 »), le composant ne la
+    // respectait pas.
+    // (2) Cohérence : `.tile-inverted` et `--inverted-*` sont des tokens
+    // inverses MESURES PAR THEME (8.70:1 en clair, 15.96:1 en sombre). La page
+    // s'ouvrait sur la tuile inversee du hero ; elle se referme sur le meme
+    // materiau, ce qui fait un vrai bookend editorial au lieu d'un bandeau vert.
+    <section className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 md:py-20" aria-labelledby="h-final-cta">
+      <div className="tile-inverted px-6 py-12 text-center md:px-12 md:py-16" data-reveal>
+        {/* `.tile-inverted .eyebrow` bascule automatiquement sur
+            --inverted-accent : --primary sur --inverted-bg ne donnerait que
+            1.82:1. Mesures : 6.49:1 (clair) et 6.35:1 (sombre). */}
+        <p className="eyebrow">Commande rapide</p>
+        <h2 id="h-final-cta" className="display-sm mx-auto max-w-[18ch]">
           Une commande à passer maintenant&nbsp;?
         </h2>
-        <p className="mt-3 text-white/90">
+        <p
+          className="mx-auto mt-4 max-w-[52ch] text-base sm:text-lg"
+          style={{ color: 'var(--inverted-muted)' }}
+        >
           Vérifiez votre quartier, composez votre panier, payez en mobile money.
+          Livraison offerte dès {FREE_DELIVERY_LABEL}.
         </p>
 
-        <div className="tap-group mt-8 flex flex-wrap justify-center">
-          {/* Un seul CTA primaire par viewport : ici c'est le bouton blanc sur vert.
-              Contrast : blanc sur #15803D = 5.02:1, conforme. */}
-          <Link
-            href="/checkout"
-            className="bg-card text-primary hover:border-border-strong inline-flex min-h-12 items-center gap-2 rounded-md border px-8 py-3 font-semibold no-underline"
-          >
+        <div className="tap-group mt-8 flex flex-wrap justify-center gap-3">
+          {/* Un seul CTA primaire par viewport : ici `.btn-inverted` (fond
+              --inverted-fg, texte --inverted-bg), contraste mesure par theme. */}
+          <Link href="/checkout" className="btn-inverted px-8">
             <Icon name="cart" className="h-5 w-5" />
             Commander
           </Link>
 
           {/* WhatsApp : canal dominant localement. Icone SVG + libelle explicite,
               accessible au clavier — pas une icone seule. */}
-          <a
-            href={SUPPORT_WHATSAPP}
-            className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/60 px-8 py-3 font-semibold text-white no-underline"
-          >
+          <a href={SUPPORT_WHATSAPP} className="btn-inverted-ghost px-8">
             <Icon name="message" className="h-5 w-5" />
             Commander sur WhatsApp
           </a>
@@ -590,11 +657,18 @@ export function CategorySections() {
             aria-labelledby={`h-${category.id}`}
           >
             <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 md:py-16">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 id={`h-${category.id}`} className="font-heading text-foreground flex items-center gap-3 text-2xl font-bold">
-                  <Icon name={category.icon} className="text-primary h-6 w-6" strokeWidth={1.75} />
-                  {category.name}
-                </h2>
+              <div className="section-head">
+                <div className="min-w-0 flex-1">
+                  {/* Sur-titre portant l'effectif CALCULE du rayon : le texte ne
+                      peut pas diverger du nombre de tuiles rendues dessous. */}
+                  <p className="eyebrow flex items-center gap-2">
+                    <Icon name={category.icon} className="h-4 w-4" strokeWidth={2} />
+                    Rayon · {category.count} produits
+                  </p>
+                  <h2 id={`h-${category.id}`} className="display-sm text-foreground">
+                    {category.name}
+                  </h2>
+                </div>
                 {/* Sortie vers le rayon COMPLET. La landing ne montre qu'un
                     apercu par rayon ; sans ce lien, un client voulant tout voir
                     n'a aucune issue. Le filtre est porte par l'URL, donc le lien

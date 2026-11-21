@@ -12,6 +12,8 @@
  * (Lucide ici).
  */
 
+import { formatXOF } from './format';
+
 export type StockState = 'in' | 'low' | 'out';
 
 export type Category = {
@@ -204,6 +206,82 @@ export const productsByCategory = (categoryId: string) =>
   products.filter((p) => p.categoryId === categoryId);
 
 export const categoryById = (id: string) => categories.find((c) => c.id === id);
+
+/* ------------------------------------------------------------------ */
+/* Regles commerciales et frais DERIVES — jamais recopies a la main     */
+/* ------------------------------------------------------------------ */
+/**
+ * Seuil de livraison offerte, en FCFA. **Source de verite unique.**
+ *
+ * Avant cet amendement la valeur etait recrite a la main a quatre endroits, et
+ * l'un d'eux divergeait : le hero annoncait « offerte des 15 000 FCFA » pendant
+ * que `checkout-flow.tsx` appliquait `subtotal >= 10000` et que deux autres
+ * sections affichaient 10 000. Le site promettait donc une condition MOINS
+ * avantageuse que la realite — un ecart invisible a la lecture d'un seul
+ * fichier, et qui coute la confiance sur un site marchand.
+ *
+ * Regle : toute valeur commerciale affichee doit etre calculee ici, puis lue
+ * par l'affichage ET par la logique de prix. Jamais recopiee.
+ */
+export const FREE_DELIVERY_THRESHOLD = 10_000;
+
+/**
+ * Le seuil, deja mis en forme. Utilise tel quel dans les trois sections qui le
+ * citent, pour qu'elles ne puissent pas diverger de formulation non plus.
+ */
+export const FREE_DELIVERY_LABEL = formatXOF(FREE_DELIVERY_THRESHOLD);
+
+/** Ligne de frais par ville, DERIVEE de `zones`. */
+export type FeeSummaryRow = {
+  ville: string;
+  /** Nombre de quartiers suivis dans cette ville */
+  quartiers: number;
+  feeMin: number;
+  feeMax: number;
+  etaMin: number;
+  etaMax: number;
+};
+
+/**
+ * Resume des frais de livraison par ville.
+ *
+ * Raison d'etre : le bloc « Frais de livraison » de la landing recopiait quatre
+ * lignes a la main (« Cotonou centre 500 », « Abomey-Calavi 1000 »…) alors que
+ * `zones` porte deja ces valeurs — et la copie etait FAUSSE : Abomey-Calavi
+ * centre est a 1 200 FCFA dans les donnees, le tableau l'affichait a 1 000.
+ *
+ * Une fourchette honnete (min–max) remplace donc l'a-plat : elle est exacte,
+ * elle reste lisible, et elle ne peut plus diverger des donnees.
+ *
+ * Les delais sont extraits des libelles (`'25–40 min'`) par expression
+ * rationnelle : les bornes reelles sont dans les donnees, pas reinventees.
+ * Place APRES `zones` pour la meme raison de TDZ que `categories` apres
+ * `products` — `tsc --noEmit` ne la signale pas, seul `npx tsx` la revele.
+ */
+export const deliveryFeeSummary: FeeSummaryRow[] = (() => {
+  const parVille = new Map<string, { fees: number[]; etas: number[]; n: number }>();
+  for (const zone of zones) {
+    if (!zone.served || zone.fee === undefined || zone.eta === undefined) continue;
+    const bornes = zone.eta.match(/\d+/g)?.map(Number) ?? [];
+    if (bornes.length === 0) continue;
+    const courant = parVille.get(zone.ville) ?? { fees: [], etas: [], n: 0 };
+    courant.fees.push(zone.fee);
+    courant.etas.push(...bornes);
+    courant.n += 1;
+    parVille.set(zone.ville, courant);
+  }
+  return [...parVille.entries()]
+    .map(([ville, { fees, etas, n }]) => ({
+      ville,
+      quartiers: n,
+      feeMin: Math.min(...fees),
+      feeMax: Math.max(...fees),
+      etaMin: Math.min(...etas),
+      etaMax: Math.max(...etas),
+    }))
+    // La ville la moins chere d'abord : c'est l'information qui convertit.
+    .sort((a, b) => a.feeMin - b.feeMin || a.ville.localeCompare(b.ville, 'fr'));
+})();
 
 /* ------------------------------------------------------------------ */
 /* Commande de demonstration (suivi de livraison)                      */

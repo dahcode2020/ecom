@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { SiteHeader, MobileCtaBar } from '@/components/site-header';
 import { ScrollReveal } from '@/components/scroll-reveal';
+import { Icon } from '@/components/icon';
 import {
   Categories,
   CategorySections,
@@ -13,7 +14,7 @@ import {
 } from '@/components/landing-sections';
 import { demoCartCount, demoCartSubtotal } from '@/lib/data';
 import { formatXOF } from '@/lib/format';
-import { SUPPORT_WHATSAPP, SUPPORT_TEL } from '@/lib/contact';
+import { SUPPORT_WHATSAPP, SUPPORT_TEL, SUPPORT_DISPLAY } from '@/lib/contact';
 
 /**
  * Landing — Quick Commerce Cotonou.
@@ -58,7 +59,12 @@ export default function LandingPage() {
           Satisfait « Focus states visible for keyboard navigation ». */}
       <a
         href="#contenu"
-        className="bg-primary focus:text-primary fixed top-2 left-2 z-50 -translate-y-24 rounded-md px-4 py-2 font-semibold text-white no-underline focus:translate-y-0"
+        // Meme double bug que sur /checkout, corrige ici aussi : `text-white` sur
+        // `bg-primary` ne donne que 2.28:1 en theme sombre (--primary #22C55E), et
+        // `focus:text-primary` sans changer le fond rendait le texte primary sur
+        // primary, donc invisible au moment precis ou le lien apparait. Le swap
+        // complet est mesure : clair 5.02:1, sombre 7.13:1.
+        className="bg-primary text-primary-foreground focus:bg-card focus:text-primary fixed top-2 left-2 z-50 -translate-y-24 rounded-md px-4 py-2 font-semibold no-underline focus:translate-y-0"
       >
         Aller au contenu
       </a>
@@ -93,13 +99,15 @@ export default function LandingPage() {
           <div className="grid gap-8 md:grid-cols-3">
             <div>
               <p className="font-heading text-foreground flex items-center gap-2 font-bold">
+                {/* DEUX corrections. (1) Contraste : `text-white` sur `bg-primary`
+                    ne donne que 2.28:1 en theme sombre (--primary #22C55E) ; le
+                    token `text-primary-foreground` vaut #052E16 en sombre (6.54:1)
+                    et #FFFFFF en clair (5.02:1). (2) Dedoublonnage : ce camion etait
+                    redessine a la main ici alors que `components/icon.tsx` expose
+                    deja la cle `truck`, utilisee par l'en-tete — deux tracés du
+                    meme logo finissent toujours par diverger. */}
                 <span className="bg-primary flex h-8 w-8 items-center justify-center rounded-md">
-                  <svg viewBox="0 0 24 24" className="h-4 w-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.25" aria-hidden="true">
-                    <path d="M10 17h4V5H2v12h3" />
-                    <path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5" />
-                    <circle cx="7.5" cy="17.5" r="2.5" />
-                    <circle cx="17.5" cy="17.5" r="2.5" />
-                  </svg>
+                  <Icon name="truck" className="h-4 w-4 text-primary-foreground" strokeWidth={2.25} />
                 </span>
                 Kpɔ́tɔ
               </p>
@@ -113,7 +121,10 @@ export default function LandingPage() {
             </div>
 
             <nav aria-label="Pied de page — informations">
-              <h2 className="font-heading text-foreground text-sm font-semibold">Informations</h2>
+              // Titre de colonne en sur-titre editorial : meme langage que les
+              // en-tetes de section. Contraste mesure : --primary sur --card
+              // (le pied de page est en bg-card) = 5.02:1 clair, 7.13:1 sombre.
+              <h2 className="eyebrow">Informations</h2>
               <ul className="mt-3 space-y-1 text-sm">
                 {[
                   { href: '#zones-desservies', label: 'Zones desservies' },
@@ -134,7 +145,10 @@ export default function LandingPage() {
             </nav>
 
             <nav aria-label="Pied de page — contact">
-              <h2 className="font-heading text-foreground text-sm font-semibold">Contact</h2>
+              // Titre de colonne en sur-titre editorial : meme langage que les
+              // en-tetes de section. Contraste mesure : --primary sur --card
+              // (le pied de page est en bg-card) = 5.02:1 clair, 7.13:1 sombre.
+              <h2 className="eyebrow">Contact</h2>
               <ul className="mt-3 space-y-1 text-sm">
                 <li>
                   <a
@@ -144,7 +158,17 @@ export default function LandingPage() {
                     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                     </svg>
-                    WhatsApp · +229 00 00 00 00
+                    {/* BUG CORRIGE : ce libelle affichait un numero PLACEHOLDER
+                        (« +229 00 00 00 00 ») alors que le lien `wa.me` pointait,
+                        lui, vers le vrai numero. Le client lisait donc un numero
+                        mort sur le canal de commande ET de support privilegie au
+                        Benin — et s'il le composait a la main, il n'aboutissait
+                        nulle part. `lib/contact.ts` interdit pourtant tout numero
+                        ecrit en dur ; celui-ci avait echappe au nettoyage parce que
+                        l'audit cherchait la chaine `22900000000` sans espaces, que
+                        ce formatage espace ne contient pas.
+                        Lecon : auditer la VALEUR AFFICHEE, pas seulement l'URL. */}
+                    WhatsApp · {SUPPORT_DISPLAY}
                   </a>
                 </li>
                 <li>
@@ -152,9 +176,14 @@ export default function LandingPage() {
                     href={SUPPORT_TEL}
                     className="text-muted-foreground hover:text-foreground inline-flex min-h-12 items-center gap-2 no-underline"
                   >
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
+                    {/* Icone partagee, plus un tracé a la main : la cle `phone`
+                        existe deja dans `components/icon.tsx`.
+                        Le glyphe WhatsApp ci-dessus est en revanche CONSERVE en
+                        inline : c'est une forme de marque reconnue, et WhatsApp
+                        est le canal de commande dominant localement — le
+                        remplacer par une bulle generique ferait perdre ce
+                        repere. Il utilise `currentColor`, donc suit le theme. */}
+                    <Icon name="phone" className="h-4 w-4" strokeWidth={2} />
                     Appeler la boutique
                   </a>
                 </li>

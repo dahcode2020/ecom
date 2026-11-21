@@ -301,6 +301,70 @@ gsap.from(el, { opacity: 0, y: 12, duration: 0.35, ease: 'power1.out', scrollTri
 - ❌ **Instant state changes** — Always use transitions (150-300ms)
 - ❌ **Invisible focus states** — Focus states must be visible for a11y
 
+### Interdits ajoutés après audit (vérifiés, pas théoriques)
+
+- ❌ **`text-white` codé en dur sur `bg-primary`** — utiliser `text-primary-foreground`.
+  En thème clair blanc sur `#15803D` = 5.02:1, conforme ; en thème sombre `--primary` vaut
+  `#22C55E` et blanc ne donne plus que **2.28:1**. Le token vaut `#FFFFFF` (clair) / `#052E16`
+  (sombre, 6.54:1). Sept endroits du site avaient cette faute ; deux seulement utilisaient le
+  token, preuve que le motif était connu mais pas appliqué systématiquement.
+- ❌ **`focus:text-X` sans changer le fond** — un swap de couleur au focus doit porter sur le
+  couple fond/texte, sinon on obtient du primaire sur primaire (1:1) : invisible au moment
+  précis où l'élément apparaît. Le lien d'évitement des deux pages avait ce bug.
+- ❌ **Valeur commerciale recopiée à la main** — seuil de livraison offerte, frais, effectifs.
+  Toute valeur affichée doit être **calculée** depuis la donnée, et la logique de prix doit lire
+  la même constante. Le hero annonçait « offerte dès 15 000 FCFA » pendant que le checkout
+  appliquait 10 000 : le site promettait une condition moins avantageuse que la réalité.
+- ❌ **Tableau de tarifs recopié depuis les données** — `deliveryFeeSummary` dérive les frais de
+  `zones`. La copie manuelle affichait « Abomey-Calavi 1 000 FCFA » alors qu'Abomey-Calavi centre
+  est à 1 200. Préférer une fourchette honnête (min–max) à un à-plat faux.
+- ❌ **Coordonnées écrites en dur** — importer `SUPPORT_DISPLAY` / `SUPPORT_TEL` /
+  `SUPPORT_WHATSAPP`. Un pied de page affichait « +229 00 00 00 00 » pendant que son lien
+  `wa.me` pointait vers le vrai numéro.
+- ❌ **Icône redessinée à la main quand la clé existe** — `icon.tsx` expose 44 clés ; le camion du
+  logo était dupliqué en pied de page. Exception assumée : le glyphe WhatsApp reste inline, car
+  c'est une forme de marque reconnue sur le canal de commande dominant localement.
+- ❌ **`<ol>`/`<ul>` sans `role="list"`** — le preflight de Tailwind pose `list-style: none`, et
+  VoiceOver cesse alors d'annoncer la liste. La numérotation disparaît pour les seuls
+  utilisateurs pour qui l'ordre compte.
+- ❌ **Classes no-op** — `bg-white/0` (blanc à 0 % d'opacité) ne fait rien et encombre le DOM.
+
+> **Leçon de méthode** : auditer la **valeur affichée**, pas seulement l'URL ou le code. Le numéro
+> de téléphone mort et le seuil de livraison contradictoire étaient invisibles à un audit qui ne
+> croisait pas l'affichage avec la donnée et la logique de prix.
+
+---
+
+## Système éditorial des sections (amendement)
+
+La landing parlait deux langues : bento éditorial en haut (h1 `.display`, clamp 36 → 68 px,
+graisse 800), puis `text-2xl sm:text-3xl` (24 → 30 px) sur `card p-6` en grilles uniformes.
+Rupture de 68 px à 30 px, `.display-sm` utilisée deux fois seulement dans tout le site.
+
+**Motif unique imposé** par `components/section-header.tsx` (Server Component, zéro JS client) :
+sur-titre `.eyebrow` + titre `.display-sm` + chapo + action alignée sur la ligne de base.
+
+| Élément | Règle | Contraste mesuré (clair / sombre) |
+|---|---|---|
+| `.eyebrow` | 12 px, capitales, `letter-spacing .14em`, `--primary` | 4.79 sur `--background` / 7.86 · 5.02 sur `--card` / 7.13 |
+| `.display-sm` | `clamp(1.6rem → 2.6rem)`, graisse 700, `−0.02em` | 8.70 / 15.96 |
+| chapo | `max-w-[62ch]` — 90 caractères par ligne est illisible | 7.24 / 9.22 |
+| `.step-numeral` | `clamp(2.75rem → 4.5rem)`, graisse 800, `tabular-nums` | 5.02 / 7.13 (texte large, seuil 3:1) |
+| `.hairline` | filet 1 px `--border`, décoratif (`aria-hidden`) | sans objet |
+
+**Trois combinaisons interdites** (vérifiées par calcul) : `--secondary` sur `--card` (**2.28:1** en
+clair), `--primary` sur `--inverted-bg` (**1.82:1**), `--primary` sur `--muted` (**4.34:1** en clair).
+D'où la règle descendante `.tile-inverted .eyebrow { color: var(--inverted-accent) }` (6.49 / 6.35) :
+elle rend l'erreur impossible au lieu de la corriger composant par composant.
+
+**CTA final** : dalle `.tile-inverted` et non bandeau `bg-primary` pleine largeur. Deux raisons — le
+bandeau codait `text-white` (2.28:1 en sombre), et la dalle inversée reprend les tokens
+`--inverted-*` mesurés par thème (8.70 / 15.96), ce qui referme la page sur le même matériau que la
+tuile inversée du hero.
+
+Détail du diagnostic, des cinq bugs et des coûts : `pages/landing.md`, section « AMENDEMENT —
+unification éditoriale et correctifs de cohérence ».
+
 ---
 
 ## Pre-Delivery Checklist

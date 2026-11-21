@@ -3,7 +3,13 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, PaymentIcon } from './icon';
-import { demoCart, paymentMethods, productById, zones } from '@/lib/data';
+import {
+  FREE_DELIVERY_THRESHOLD,
+  demoCart,
+  paymentMethods,
+  productById,
+  zones,
+} from '@/lib/data';
 import { formatXOF, validateBeninPhone } from '@/lib/format';
 import { SUPPORT_WHATSAPP } from '@/lib/contact';
 
@@ -89,7 +95,11 @@ export function CheckoutFlow() {
 
   const cartCount = lines.reduce((sum, l) => sum + l.qty, 0);
   const subtotal = lines.reduce((sum, l) => sum + l.total, 0);
-  const deliveryFee = subtotal >= 10000 ? 0 : (selectedZone?.fee ?? 500);
+  // Seuil lu dans `lib/data.ts`, PLUS recopie : c'etait la moitie du bug
+  // d'incoherence (le hero annoncait 15 000 FCFA pendant que cette ligne en
+  // appliquait 10 000). La logique de prix et l'affichage partagent desormais
+  // la meme constante, donc ils ne peuvent plus diverger.
+  const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : (selectedZone?.fee ?? 500);
   const total = subtotal + deliveryFee;
 
   // Garde-fou ordonnance : si un produit soumis a ordonnance est au panier,
@@ -242,7 +252,10 @@ export function CheckoutFlow() {
             longue (Motion 3/10). */}
         <div className="card p-6 sm:p-8" role="status" aria-live="polite">
           <span className="bg-primary flex h-14 w-14 items-center justify-center rounded-full">
-            <Icon name="check" className="h-7 w-7 text-white" strokeWidth={2.5} />
+            // `text-primary-foreground` et non `text-white` : en theme sombre --primary
+            // vaut #22C55E et le blanc n'y donne que 2.28:1. Le token vaut #052E16
+            // en sombre (6.54:1) et #FFFFFF en clair (5.02:1).
+            <Icon name="check" className="h-7 w-7 text-primary-foreground" strokeWidth={2.5} />
           </span>
 
           <h1 className="font-heading text-foreground mt-5 text-2xl font-bold">
@@ -342,12 +355,17 @@ export function CheckoutFlow() {
                     aria-disabled={isFuture}
                     aria-current={isCurrent ? 'step' : undefined}
                     className={`flex min-h-12 flex-1 items-center gap-2 rounded-md border px-3 py-2 ${
-                      isCurrent ? 'bg-primary text-white' : 'text-muted-foreground'
+                      isCurrent ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
                     }`}
                   >
                     <span
                       className={`font-heading flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                        isCurrent ? 'bg-white/20 text-white' : 'bg-muted'
+                        // Puce inversee : fond --primary-foreground, texte --primary. Mesure :
+                        // clair #15803D sur #FFFFFF = 5.02:1, sombre #22C55E sur
+                        // #052E16 = 6.54:1. L'ancien `bg-white/20 text-white` restait
+                        // sous 3:1 en sombre, et l'operateur d'opacite de Tailwind v4
+                        // compile en color-mix(), proscrit ici (Chrome <111).
+                        isCurrent ? 'bg-primary-foreground text-primary' : 'bg-muted'
                       }`}
                       aria-hidden="true"
                     >

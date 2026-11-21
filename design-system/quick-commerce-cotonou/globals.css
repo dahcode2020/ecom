@@ -922,6 +922,78 @@
   }
 
   /* ---------------------------------------------------------------- */
+  /*  5d. EN-TETE DE SECTION EDITORIALE                                */
+  /* ----------------------------------------------------------------
+   * DIAGNOSTIC qui motive ce bloc : la landing parlait DEUX langues. Le hero,
+   * les rayons et la vitrine etaient en bento editorial (h1 en `.display`, soit
+   * clamp 36 -> 68 px, graisse 800, -0.03em), puis toutes les sections
+   * suivantes retombaient sur un `text-2xl sm:text-3xl` (24 -> 30 px) et des
+   * `card p-6` alignes en grilles uniformes. La page culminait en haut puis se
+   * dedefinissait : rupture de 68 px a 30 px, aucune hierarchie entre sections,
+   * et `.display-sm` — creee pour ca — n'etait utilisee que deux fois.
+   *
+   * Ce bloc pose un motif d'en-tete unique (sur-titre + titre + chapo + action)
+   * applique a toutes les sections, pour que la page se lise comme un seul
+   * systeme editorial.
+   */
+  .section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-md) var(--space-lg);
+  }
+
+  /* Sur-titre : etiquette de section en petites capitales espacees.
+   *
+   * CONTRAINTES DE CONTRASTE MESUREES (--primary, texte 12 px => 4.5:1 requis) :
+   *   clair  : sur --background 4.79:1 OK | sur --card 5.02:1 OK | sur --muted 4.34:1 INSUFFISANT
+   *   sombre : sur --background 7.86:1 OK | sur --card 7.13:1 OK | sur --muted 6.31:1 OK
+   * => ne JAMAIS poser `.eyebrow` sur un fond `--muted` en theme clair, et
+   *    jamais sur `--primary` (le CTA final inverse utilise `--inverted-accent`).
+   */
+  .eyebrow {
+    margin-bottom: 0.5rem;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--primary);
+  }
+
+  /* Numeral d'etape. Texte LARGE (>= 32 px) : le seuil AA est 3:1, pas 4.5:1.
+   * Mesures sur --card : --primary 5.02:1 (clair) / 7.13:1 (sombre) => conforme.
+   * --secondary est INTERDIT ici : 2.28:1 en clair.
+   * `tabular-nums` pour que 01/02/03 occupent la meme largeur. */
+  .step-numeral {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: clamp(2.75rem, 2rem + 3vw, 4.5rem);
+    line-height: 0.82;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--primary);
+  }
+
+  /* Sur une tuile inversee le sur-titre ne peut PAS rester en --primary :
+     #15803D sur --inverted-bg #14532D = 1.82:1 (mesure, interdit). On bascule
+     sur --inverted-accent, mesure a 6.49:1 en clair et 6.35:1 en sombre — tous
+     deux au-dessus des 4.5:1 requis pour un texte de 12 px.
+     Regle descendante volontaire : elle empeche l'erreur au lieu de la corriger
+     composant par composant. */
+  .tile-inverted .eyebrow {
+    color: var(--inverted-accent);
+  }
+
+  /* Filet editorial : remplit l'espace restant a cote d'un numeral.
+     Decoratif (aria-hidden), donc exempt de contrainte de contraste. */
+  .hairline {
+    height: 1px;
+    background-color: var(--border);
+  }
+
+  /* ---------------------------------------------------------------- */
   /*  6. SKELETON (recette 15)                                         */
   /* ---------------------------------------------------------------- */
   .skeleton {
