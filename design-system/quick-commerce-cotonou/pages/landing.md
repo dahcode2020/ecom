@@ -282,6 +282,17 @@ Cette page **est** la page d'indexation. Regles :
   `nunito-sans-latin-ext` 27 908 o = **113 732 o (111 Ko)**.
   Les subsets arabe, cyrillique, hebreu et vietnamien ne sont jamais telecharges : les 248 Ko
   de woff2 presents dans le build sont des artefacts, pas du poids runtime.
+- **CSS — mesure reelle, et un defaut corrige.** Tailwind v4 detecte automatiquement les classes
+  dans toute la racine du projet. Sans exclusion, il aspirait aussi `.agents/` — les donnees et la
+  documentation du skill ui-ux-pro-max. Constat mesure : `dark:scale-0`, present uniquement dans
+  `.agents/skills/ui-styling/references/shadcn-theming.md`, etait compile dans la CSS servie, alors
+  que `app/`, `components/` et `lib/` n'utilisent **aucune** variante `dark:`.
+  Correction dans `app/globals.css` : `@source not "../.agents"` et `@source not "../design-system"`.
+  **CSS passee de 59 910 o a 30 171 o, soit -49,6 %.** Gain direct sur la contrainte bas debit.
+- **Variante `dark:` alignee sur la strategie par classe.** Par defaut Tailwind fait repondre
+  `dark:` a `@media (prefers-color-scheme: dark)`, alors que ce projet bascule par CLASSE
+  (`.dark` sur `<html>`). `@custom-variant dark (&:where(.dark, .dark *));` est declare dans
+  `app/globals.css` pour que toute future classe `dark:...` suive la bascule utilisateur.
 - **LCP < 2,5 s** en 4G degradee reste l'objectif ; le LCP doit etre le titre du hero ou le champ
   de verification de zone, pas une image.
 

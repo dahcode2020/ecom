@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Icon } from './icon';
+import { ThemeToggle } from './theme-toggle';
 import { formatNumber } from '@/lib/format';
 
 /**
@@ -73,6 +74,10 @@ export function SiteHeader({
         )}
 
         <div className="ml-auto flex items-center gap-2">
+          {/* Bascule de theme — presente sur les deux variantes d'en-tete.
+              Le schema sombre est defini une seule fois dans globals.css. */}
+          <ThemeToggle />
+
           {isCheckout ? (
             // Aide WhatsApp : canal de secours pendant l'attente operateur.
             <a

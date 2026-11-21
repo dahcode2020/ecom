@@ -1,11 +1,54 @@
 /*
  * Point d'entree CSS de l'application.
  *
- * VOLONTAIREMENT un seul @import : la source de verite des tokens est
- * `design-system/quick-commerce-cotonou/globals.css`, qui contient deja
- * `@import "tailwindcss";`. Ne PAS re-importer Tailwind ici — cela dupliquerait
- * le preflight et les couches.
+ * VOLONTAIREMENT un seul @import vers le design system : la source de verite des
+ * tokens est `design-system/quick-commerce-cotonou/globals.css`, qui contient
+ * deja `@import "tailwindcss";`. Ne PAS re-importer Tailwind ici — cela
+ * dupliquerait le preflight et les couches.
  *
  * Modifier les tokens dans le fichier du design system, pas ici.
+ * Ce fichier ne porte QUE le cablage specifique a l'application :
+ * ce que Tailwind doit scanner, et la strategie de dark mode.
  */
+
+/* ------------------------------------------------------------------ */
+/* 1. Perimetre de scan Tailwind                                       */
+/* ------------------------------------------------------------------ */
+/*
+ * Tailwind v4 detecte automatiquement les classes dans TOUTE la racine du
+ * projet. Sans exclusion, il aspire aussi `.agents/` — les donnees et la
+ * documentation du skill ui-ux-pro-max, qui ne sont pas du code applicatif.
+ *
+ * Defaut constate et mesure : `.agents/skills/ui-styling/references/
+ * shadcn-theming.md` contient 22 occurrences de `dark:...`, et l'une d'elles
+ * (`dark:scale-0`) s'est retrouvee compilee dans la CSS servie, alors que
+ * app/, components/ et lib/ n'utilisent AUCUNE variante `dark:`.
+ *
+ * Deux consequences reelles :
+ *   - CSS gonflee par des utilitaires issus de fichiers tiers, contraire a la
+ *     contrainte bas debit documentee dans pages/landing.md ;
+ *   - risque de comportement incoherent : par defaut la variante `dark:` de
+ *     Tailwind repond a `@media (prefers-color-scheme: dark)`, alors que ce
+ *     projet bascule par CLASSE (voir point 2).
+ */
+@source not "../.agents";
+@source not "../design-system";
+
+/* ------------------------------------------------------------------ */
+/* 2. Strategie de dark mode : par CLASSE, pas par media query         */
+/* ------------------------------------------------------------------ */
+/*
+ * Le theme sombre est pilote par la classe `.dark` sur <html>, posee avant le
+ * premier paint par le script bloquant de app/layout.tsx et basculee par
+ * components/theme-toggle.tsx.
+ *
+ * Cette declaration aligne la variante `dark:` de Tailwind sur cette
+ * strategie : toute classe `dark:...` ecrite dans un composant suivra la
+ * bascule utilisateur, et non la preference systeme seule.
+ *
+ * Les tokens eux-memes ne sont PAS definis ici : ils sont dans le bloc `.dark`
+ * du fichier du design system, une seule fois, avec des contrastes mesures.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @import "../design-system/quick-commerce-cotonou/globals.css";

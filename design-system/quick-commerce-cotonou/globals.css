@@ -78,6 +78,11 @@
 /* LIGHT — palette generee par le skill, validee telle quelle          */
 /* ------------------------------------------------------------------ */
 :root {
+  /* Indispensable pour que les controles NATIFS (select, scrollbars, inputs,
+     date pickers) suivent le theme. Sans cette ligne ils restent clairs en
+     mode sombre. Une seule valeur par bloc : pas de duplication des tokens. */
+  color-scheme: light;
+
   /* Surfaces */
   --background: #f0fdf4;             /* vs foreground : 8.70:1 */
   --foreground: #14532d;
@@ -131,6 +136,8 @@
 /* Le style Flat Design est taggue "Dark supported" : schema requis.   */
 /* ------------------------------------------------------------------ */
 .dark {
+  color-scheme: dark;
+
   --background: #0c1a12;             /* vs foreground : 15.96:1 */
   --foreground: #e8f5ec;
   --card: #12241a;                   /* vs foreground : 14.47:1 */
