@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, PaymentIcon } from './icon';
 import { demoCart, paymentMethods, productById, zones } from '@/lib/data';
 import { formatXOF, validateBeninPhone } from '@/lib/format';
+import { SUPPORT_WHATSAPP } from '@/lib/contact';
 
 /**
  * Tunnel de commande.
@@ -278,15 +280,28 @@ export function CheckoutFlow() {
             </div>
           </dl>
 
+          {/* ACTION PRIMAIRE = suivre la commande. Avant l'existence de la page
+              /suivi, WhatsApp etait le seul canal de suivi possible ; il reste
+              propose, mais en repli, sous les boutons. Confirmation COURTE
+              (pages/checkout.md) : deux boutons, pas trois.
+              `Link` et non `<a>` pour les routes internes : `<a>` declenche un
+              rechargement complet, ce qui perd le prefetch et le cache client. */}
           <div className="tap-group mt-8 flex flex-wrap">
-            <a href="https://wa.me/22900000000" className="btn-primary min-h-12 flex-1 px-4">
-              <Icon name="message" className="h-5 w-5" />
-              Suivre sur WhatsApp
-            </a>
-            <a href="/" className="btn-outline min-h-12 flex-1 px-4">
+            <Link href="/suivi" className="btn-primary min-h-12 flex-1 px-4">
+              <Icon name="truck" className="h-5 w-5" />
+              Suivre ma commande
+            </Link>
+            <Link href="/" className="btn-outline min-h-12 flex-1 px-4">
               Retour à l’accueil
-            </a>
+            </Link>
           </div>
+
+          <p className="text-muted-foreground mt-4 text-sm">
+            Une question sur cette commande ?{' '}
+            <a href={SUPPORT_WHATSAPP} className="text-accent underline underline-offset-4">
+              Écrire sur WhatsApp
+            </a>
+          </p>
         </div>
       </div>
     );
@@ -415,7 +430,7 @@ export function CheckoutFlow() {
                   <Icon name="arrowRight" className="h-4 w-4" />
                   Réessayer le paiement
                 </button>
-                <a href="https://wa.me/22900000000" className="btn-outline min-h-12 px-4 text-sm">
+                <a href={SUPPORT_WHATSAPP} className="btn-outline min-h-12 px-4 text-sm">
                   <Icon name="message" className="h-4 w-4" />
                   Aide WhatsApp
                 </a>
@@ -704,7 +719,7 @@ export function CheckoutFlow() {
                     l’opérateur.
                   </p>
                   <a
-                    href="https://wa.me/22900000000"
+                    href={SUPPORT_WHATSAPP}
                     className="text-primary mt-3 inline-flex min-h-12 items-center gap-2 text-sm font-semibold"
                   >
                     <Icon name="message" className="h-4 w-4" />

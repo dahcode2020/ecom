@@ -11,6 +11,7 @@ import {
 } from '@/components/landing-sections';
 import { demoCartCount, demoCartSubtotal } from '@/lib/data';
 import { formatXOF } from '@/lib/format';
+import { SUPPORT_WHATSAPP, SUPPORT_TEL } from '@/lib/contact';
 
 /**
  * Landing — Quick Commerce Cotonou.
@@ -110,7 +111,7 @@ export default function LandingPage() {
               <ul className="mt-3 space-y-1 text-sm">
                 <li>
                   <a
-                    href="https://wa.me/22900000000"
+                    href={SUPPORT_WHATSAPP}
                     className="text-muted-foreground hover:text-foreground inline-flex min-h-12 items-center gap-2 no-underline"
                   >
                     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -121,7 +122,7 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <a
-                    href="tel:+22900000000"
+                    href={SUPPORT_TEL}
                     className="text-muted-foreground hover:text-foreground inline-flex min-h-12 items-center gap-2 no-underline"
                   >
                     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

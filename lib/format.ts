@@ -85,3 +85,30 @@ export function validateBeninPhone(raw: string): number | null {
   if (digits.startsWith('229') && digits.length > 8) digits = digits.slice(3);
   return digits.length === 8 || digits.length === 10 ? digits.length : null;
 }
+
+/**
+ * Petit cardinal en toutes lettres, pour les accroches marketing.
+ *
+ * Utilise par la landing (« Six rayons, un seul panier. »), ou le nombre etait
+ * auparavant ECRIT A LA MAIN : il aurait menti des l'ajout ou le retrait d'un
+ * rayon. Au-dela de seize, on retombe sur le chiffre — une accroche n'a pas
+ * besoin d'etre exacte a l'unite pres au-dela, et `99` en toutes lettres
+ * alourdirait la phrase.
+ */
+const FRENCH_CARDINALS = [
+  'zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept',
+  'huit', 'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize',
+] as const;
+
+export function frenchCardinal(count: number): string {
+  if (Number.isInteger(count) && count >= 0 && count < FRENCH_CARDINALS.length) {
+    return FRENCH_CARDINALS[count];
+  }
+  return formatNumber(count);
+}
+
+/** Variante avec capitale initiale, pour un debut de phrase. */
+export function frenchCardinalCapitalized(count: number): string {
+  const word = frenchCardinal(count);
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}

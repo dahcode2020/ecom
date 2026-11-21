@@ -5,6 +5,11 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    // Detecte les imports et variables morts. Utile ici : sans cela, tsc a
+    // laisse passer `StockBadge` et `type Product` devenus inutilises apres
+    // l'extraction de la tuile produit dans son propre module.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",

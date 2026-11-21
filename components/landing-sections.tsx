@@ -7,10 +7,10 @@ import {
   popularProducts,
   productsByCategory,
   zones,
-  type Product,
-  type StockState,
 } from '@/lib/data';
-import { formatXOF } from '@/lib/format';
+import { ProductTile } from './product-tile';
+import { formatXOF, frenchCardinalCapitalized } from '@/lib/format';
+import { SUPPORT_WHATSAPP } from '@/lib/contact';
 
 /**
  * Sections de la landing.
@@ -39,67 +39,6 @@ import { formatXOF } from '@/lib/format';
  * `sizes` explicite, `placeholder="blur"`, `priority` sur le hero uniquement et
  * lazy sur tout le reste (UX Medium : « Lazy load below-fold images »).
  */
-
-const STOCK_LABEL: Record<StockState, { text: string; tone: string }> = {
-  in: { text: 'En stock', tone: 'text-primary' },
-  low: { text: 'Stock faible', tone: 'text-muted-foreground' },
-  // Un produit indisponible reste VISIBLE et marque, jamais retire silencieusement.
-  out: { text: 'Indisponible', tone: 'text-muted-foreground' },
-};
-
-function StockBadge({ stock }: { stock: StockState }) {
-  const { text, tone } = STOCK_LABEL[stock];
-  return (
-    <span className={`${tone} flex items-center gap-1 text-xs font-medium`}>
-      <Icon
-        name={stock === 'in' ? 'check' : stock === 'low' ? 'info' : 'close'}
-        className="h-3.5 w-3.5"
-      />
-      {text}
-    </span>
-  );
-}
-
-function ProductTile({ product }: { product: Product }) {
-  const soldOut = product.stock === 'out';
-  return (
-    <article className="card flex flex-col gap-3 p-0">
-      {/* Tuile plate : pas de degrading, pas d'ombre (Flat Design). */}
-      <div className="bg-muted text-primary flex aspect-square items-center justify-center rounded-t-lg">
-        <Icon name={product.icon} className="h-10 w-10" strokeWidth={1.5} />
-      </div>
-
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="font-heading text-foreground text-base leading-snug font-semibold">
-          {product.name}
-        </h3>
-        <p className="text-muted-foreground text-sm">{product.unit}</p>
-
-        <div className="mt-auto flex items-end justify-between gap-2">
-          <p className="font-heading text-foreground text-lg font-bold">
-            {formatXOF(product.price)}
-          </p>
-          <StockBadge stock={product.stock} />
-        </div>
-
-        {/* Bouton desactive MAIS present quand le produit est indisponible,
-            avec aria-disabled et un libelle explicite. */}
-        <button
-          type="button"
-          disabled={soldOut}
-          aria-disabled={soldOut}
-          className={
-            soldOut
-              ? 'text-muted-foreground min-h-12 w-full cursor-not-allowed rounded-md border py-2 text-sm font-semibold opacity-60'
-              : 'btn-primary w-full py-2 text-sm'
-          }
-        >
-          {soldOut ? 'Indisponible' : 'Ajouter au panier'}
-        </button>
-      </div>
-    </article>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* 1. Hero + verification de zone                                      */
@@ -161,7 +100,11 @@ export function Categories() {
       <h2 id="h-categories" className="font-heading text-foreground text-2xl font-bold sm:text-3xl">
         Nos rayons
       </h2>
-      <p className="text-muted-foreground mt-2">Six rayons, un seul panier.</p>
+      {/* Nombre de rayons CALCULE, jamais ecrit a la main : « Six » mentait
+          des l'ajout d'un rayon. */}
+      <p className="text-muted-foreground mt-2">
+        {frenchCardinalCapitalized(categories.length)} rayons, un seul panier.
+      </p>
 
       {/* 2 colonnes mobile, 3 en tablette, 4+ en desktop.
           Tuiles >= 48px, ecart >= 8px. Libelles non tronques. */}
@@ -451,7 +394,7 @@ export function FinalCta() {
           {/* WhatsApp : canal dominant localement. Icone SVG + libelle explicite,
               accessible au clavier — pas une icone seule. */}
           <a
-            href="https://wa.me/22900000000"
+            href={SUPPORT_WHATSAPP}
             className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/60 px-8 py-3 font-semibold text-white no-underline"
           >
             <Icon name="message" className="h-5 w-5" />
@@ -479,10 +422,23 @@ export function CategorySections() {
             aria-labelledby={`h-${category.id}`}
           >
             <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 md:py-16">
-              <h2 id={`h-${category.id}`} className="font-heading text-foreground flex items-center gap-3 text-2xl font-bold">
-                <Icon name={category.icon} className="text-primary h-6 w-6" strokeWidth={1.75} />
-                {category.name}
-              </h2>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 id={`h-${category.id}`} className="font-heading text-foreground flex items-center gap-3 text-2xl font-bold">
+                  <Icon name={category.icon} className="text-primary h-6 w-6" strokeWidth={1.75} />
+                  {category.name}
+                </h2>
+                {/* Sortie vers le rayon COMPLET. La landing ne montre qu'un
+                    apercu par rayon ; sans ce lien, un client voulant tout voir
+                    n'a aucune issue. Le filtre est porte par l'URL, donc le lien
+                    reste partageable et fonctionne sans JavaScript. */}
+                <Link
+                  href={`/catalogue?cat=${category.id}`}
+                  className="text-accent inline-flex min-h-12 items-center gap-1.5 text-sm font-semibold underline underline-offset-4"
+                >
+                  Voir les {category.count} produits
+                  <Icon name="arrowRight" className="h-4 w-4" />
+                </Link>
+              </div>
               <div className="mt-8 grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
                 {items.map((product) => (
                   <ProductTile key={product.id} product={product} />

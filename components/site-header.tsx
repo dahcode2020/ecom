@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Icon } from './icon';
 import { ThemeToggle } from './theme-toggle';
 import { formatNumber } from '@/lib/format';
+import { SUPPORT_WHATSAPP } from '@/lib/contact';
 
 /**
  * En-tete sticky.
@@ -46,6 +47,14 @@ export function SiteHeader({
 
         {!isCheckout && (
           <nav aria-label="Navigation principale" className="ml-4 hidden items-center gap-1 md:flex">
+            {/* Le catalogue est une PAGE, pas une ancre : il ouvre donc la
+                navigation interne, avant les ancres de la landing. */}
+            <Link
+              href="/catalogue"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex min-h-12 items-center rounded-md px-3 text-sm font-medium no-underline"
+            >
+              Catalogue
+            </Link>
             <Link
               href="#h-how"
               className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex min-h-12 items-center rounded-md px-3 text-sm font-medium no-underline"
@@ -81,7 +90,7 @@ export function SiteHeader({
           {isCheckout ? (
             // Aide WhatsApp : canal de secours pendant l'attente operateur.
             <a
-              href="https://wa.me/22900000000"
+              href={SUPPORT_WHATSAPP}
               className="text-primary inline-flex min-h-12 items-center gap-2 rounded-md border px-3 text-sm font-semibold no-underline"
             >
               <Icon name="message" className="h-4 w-4" />

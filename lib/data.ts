@@ -56,14 +56,22 @@ export type PaymentMethod = {
 /* ------------------------------------------------------------------ */
 /* Categories                                                          */
 /* ------------------------------------------------------------------ */
-export const categories: Category[] = [
-  { id: 'epicerie', name: 'Épicerie', icon: 'wheat', count: 7 },
-  { id: 'pharmacie', name: 'Pharmacie & santé', icon: 'cross', count: 6 },
-  { id: 'boissons', name: 'Boissons', icon: 'cup', count: 4 },
-  { id: 'hygiene', name: 'Hygiène & entretien', icon: 'sparkle', count: 4 },
-  { id: 'frais', name: 'Produits frais', icon: 'leaf', count: 6 },
-  { id: 'maison', name: 'Maison & cuisine', icon: 'home', count: 3 },
-];
+/**
+ * `count` est CALCULE a partir de `products`, jamais code en dur.
+ *
+ * Raison : sur la page catalogue, un filtre qui annonce « 7 produits » a cote
+ * de 6 resultats est un mensonge visible, et la meme derive s'etait deja
+ * produite sur le compteur de panier (`cartCount={5}`). Une seule source :
+ * le tableau `products`.
+ */
+const categoryMeta = [
+  { id: 'epicerie', name: 'Épicerie', icon: 'wheat' },
+  { id: 'pharmacie', name: 'Pharmacie & santé', icon: 'cross' },
+  { id: 'boissons', name: 'Boissons', icon: 'cup' },
+  { id: 'hygiene', name: 'Hygiène & entretien', icon: 'sparkle' },
+  { id: 'frais', name: 'Produits frais', icon: 'leaf' },
+  { id: 'maison', name: 'Maison & cuisine', icon: 'home' },
+] as const;
 
 /* ------------------------------------------------------------------ */
 /* Produits                                                            */
@@ -161,6 +169,21 @@ export const demoCart = [
   { productId: 'lessive-1kg', qty: 1 },
 ];
 
+/**
+ * DECLARE APRES `products` : le `.map()` ci-dessous s'execute a l'initialisation
+ * du module, donc il lit `products` immediatement. Placer cette ligne avant
+ * `products` leve `ReferenceError: Cannot access 'products' before initialization`
+ * (zone morte temporelle).
+ *
+ * Piege note au passage : `tsc --noEmit` ne signale PAS cette erreur, car la
+ * reference est a l'interieur d'un callback. Seule l'execution la revele —
+ * d'ou le test `npx tsx -e` sur ce module apres chaque changement d'ordre.
+ */
+export const categories: Category[] = categoryMeta.map((meta) => ({
+  ...meta,
+  count: products.filter((product) => product.categoryId === meta.id).length,
+}));
+
 export const productById = (id: string) => products.find((p) => p.id === id);
 
 /**
@@ -179,3 +202,96 @@ export const popularProducts = products.filter((p) => p.popular);
 
 export const productsByCategory = (categoryId: string) =>
   products.filter((p) => p.categoryId === categoryId);
+
+export const categoryById = (id: string) => categories.find((c) => c.id === id);
+
+/* ------------------------------------------------------------------ */
+/* Commande de demonstration (suivi de livraison)                      */
+/* ------------------------------------------------------------------ */
+/**
+ * Etat du coursier. `en_route` et `en_cours_livraison` sont les deux etats ou
+ * le suivi a du sens en temps reel ; `prete` est l'etat charniere ou le client
+ * attend encore une confirmation.
+ */
+export type OrderStatus = 'confirmee' | 'preparation' | 'prete' | 'en_route' | 'livree';
+
+export type TrackingStep = {
+  id: string;
+  label: string;
+  /** Detail concret, utile au client : quoi, ou, combien de temps. */
+  detail: string;
+  icon: string;
+  status: OrderStatus;
+  /** `true` = etape franchie, affichee avec heure reelle. */
+  done: boolean;
+  time?: string;
+};
+
+export type DemoOrder = {
+  ref: string;
+  status: OrderStatus;
+  quartier: string;
+  ville: string;
+  coursier: { name: string; phone: string; vehicle: string };
+  /** Position du coursier sur le schema, en pourcentage du trajet (0 = depot). */
+  progress: number;
+  etaMin: number;
+  items: { productId: string; qty: number }[];
+  steps: TrackingStep[];
+};
+
+export const demoOrder: DemoOrder = {
+  ref: 'QCC-2418',
+  status: 'en_route',
+  quartier: 'Cadjèhoun',
+  ville: 'Cotonou',
+  coursier: { name: 'Serge A.', phone: '0197451203', vehicle: 'Moto' },
+  progress: 0.62,
+  etaMin: 14,
+  items: demoCart,
+  steps: [
+    {
+      id: 'confirmee',
+      label: 'Commande confirmée',
+      detail: 'Paiement reçu — MTN MoMo',
+      icon: 'checkCircle',
+      status: 'confirmee',
+      done: true,
+      time: '14 h 02',
+    },
+    {
+      id: 'preparation',
+      label: 'Préparation en cours',
+      detail: 'Les 10 articles sont rassemblés au dépôt de Cadjèhoun',
+      icon: 'package',
+      status: 'preparation',
+      done: true,
+      time: '14 h 11',
+    },
+    {
+      id: 'prete',
+      label: 'Colis remis au coursier',
+      detail: 'Serge A. — moto, plaque AB 4521',
+      icon: 'truck',
+      status: 'prete',
+      done: true,
+      time: '14 h 23',
+    },
+    {
+      id: 'en_route',
+      label: 'En route vers votre adresse',
+      detail: 'Trajet dépôt → Cadjèhoun, via Boulevard de la Marina',
+      icon: 'mapPin',
+      status: 'en_route',
+      done: false,
+    },
+    {
+      id: 'livree',
+      label: 'Livrée',
+      detail: 'Signature ou code de réception demandé à l’arrivée',
+      icon: 'home',
+      status: 'livree',
+      done: false,
+    },
+  ],
+};

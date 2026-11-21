@@ -482,11 +482,30 @@ python3 .agents/skills/ui-ux-pro-max/scripts/search.py \
   "food delivery on-demand courier grocery" --domain product -n 3 --full
 ```
 
-### A trancher en phase 2 — suivi de livraison
+### TRANCHÉ — suivi de livraison (implémenté dans `/suivi`)
 
 Le generateur a apparie ce projet a **Pharmacy/Drug Store**, dont le dashboard recommande est
 *« Inventory Dashboard »*. Or la ligne **Food Delivery / On-Demand** de `products.csv` recommande
-**« Real-Time Monitoring + Map »**, bien plus adapte au suivi de coursier. Pour l'ecran de suivi de
-commande et le back-office livreur, retenir **Real-Time Monitoring + Map**, avec la contrainte
-« pas de fond de carte lourd » (tuiles legeres, ou schema statique + etapes textuelles si le reseau
-est degrade).
+**« Real-Time Monitoring + Map »**, bien plus adapte au suivi de coursier.
+
+**Decision retenue : Real-Time Monitoring**, « Inventory Dashboard » etant ecarte comme herite d'un
+archetype qui ne correspond pas a l'usage reel (suivre un coursier, pas gerer un stock). Reste au
+back-office vendeur, ou il redevient pertinent.
+
+**Mais « + Map » est amende.** Un fournisseur de tuiles couterait une cle d'API, des requetes vers
+un tiers (l'environnement de build n'a pas d'acces reseau sortant — deja constate avec
+`fonts.googleapis.com`), 150 a 500 Ko de tuiles raster + JS, et une dependance a la geolocalisation.
+Redhibitoire sur la cible declaree du projet (3G/4G instable). Retenu donc, conformement a la
+contrainte « pas de fond de carte lourd » :
+
+- **etapes textuelles = source de verite**, rendues cote serveur ;
+- **schema SVG statique en complement** (`components/route-schematic.tsx`, ~2 Ko, zero requete
+  reseau, fonctionne hors ligne), avec `role="img"` + `<title>`/`<desc>` ;
+- position du coursier **calculee depuis la donnee**, jamais animee en CSS pour faire joli ;
+- actualisation **explicite** (bouton), pas de sondage automatique : un `setInterval` toutes les
+  15 s epuise batterie et bande passante sans garantie de reponse, et contredit la regle du
+  checkout (« ne jamais relancer une requete pendant un etat en attente »).
+
+`/suivi` est en **`no-store`**, comme `/checkout` : un etat de commande mis en cache afficherait
+« en preparation » a un client dont le colis est deja parti.
+
