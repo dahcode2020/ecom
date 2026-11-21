@@ -657,7 +657,26 @@ sont des *content layers* ou des *dense reading surfaces* — explicitement dans
 | Landing gzip | 30 368 o | 30 421 o | +53 o |
 | Chunk verre (lazy) | — | **32,3 Ko gzip** | hors First Load |
 
-Audit de conformité : **57/57** (`/tmp/audit5.py` — crash SSR, repli solide au premier paint,
-valeurs des tokens vérifiées numériquement, les deux replis d'accessibilité, périmètre contenu vs
-chrome, non-régression bento). L'audit cumulé du bento reste à **86/92**, avec les mêmes 6 faux
+### Un bug de mise en page évité de justesse
+
+La librairie pose `display:inline-flex` **en style inline** sur sa couche interne `.glass`. Un
+élément `inline-flex` se contracte sur son contenu : le panneau de vérification de zone n'aurait pas
+rempli sa cellule bento, et le bouton de la barre mobile pleine largeur serait ressorti étroit et
+décalé. Un style inline ne se surcharge que par `!important`, d'où la règle scopée
+`.glass-fill .glass { display: block !important; }` — **le seul `!important` du design system**, et
+il ne peut pas fuiter hors de nos instances (vérifié : aucun sélecteur non scopé ne cible le `.glass`
+de la librairie dans la CSS servie). `block` et non `flex` : la librairie pose aussi
+`align-items:center` en inline, qui centrerait et contracterait l'enfant unique en colonne.
+
+### Ombre portée de la librairie — écart assumé
+
+La librairie pose en inline `0 12px 40px rgb(0 0 0 /.25)` (ou `.75` si `overLight`), non
+surchargeable sans `!important`. C'est **assumé** : la règle Flat Design du Master interdit les
+ombres *sauf* sur les « calques flottants (modales, dropdowns, sheets) » — une surface de verre
+posée au-dessus du contenu qui défile en est un, par définition. C'est aussi ce qui sépare le calque
+sans recourir à une bordure épaisse.
+
+Audit de conformité : **63/63** (`/tmp/audit7.py` — crash SSR, repli solide au premier paint,
+valeurs des tokens vérifiées numériquement, les deux replis d'accessibilité, règle de mise en page
+servie et scopée, périmètre contenu vs chrome, non-régression bento). L'audit cumulé du bento reste à **86/92**, avec les mêmes 6 faux
 négatifs connus du script (minification, `data-reveal="true"`, `srcSet` en camelCase, images `fill`).
