@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Illustration, illustrationForCategory } from './illustration';
+import { GlassSurface } from './glass-surface';
 import { Icon, PaymentIcon } from './icon';
 import { ZoneCheck } from './zone-check';
 import {
@@ -142,9 +143,26 @@ export function Hero() {
           </div>
 
           {/* --- 3. Verification de zone : le CTA primaire ---------------- */}
-          <div id="zone-check" className="bento-tile bento-2x2 scroll-mt-24 p-5 md:p-6 lg:bento-2x1">
-            <ZoneCheck />
-          </div>
+          {/* Panneau de CONTROLES (verification de zone) : usage legitime du
+              verre selon la fiche du style. Le contenu reste sur sa propre
+              couche via la teinte de GlassSurface.
+              Les champs `.input` gardent leur fond plein : un champ de saisie
+              translucide rend le curseur et le texte imprevisibles, et la fiche
+              exclut explicitement les « content layers ». */}
+          <GlassSurface
+            fallbackClassName="bento-tile p-5 md:p-6"
+            className="bento-2x2 scroll-mt-24 lg:bento-2x1"
+            cornerRadius={16}
+            overLight
+          >
+            {/* Ni padding ni scroll-mt ici : le padding est deja porte par
+                `fallbackClassName` (applique a la couche de teinte en mode
+                verre, et au repli solide sinon). Le doubler aurait ajoute
+                40px de marge interieure en mode verre. */}
+            <div id="zone-check">
+              <ZoneCheck />
+            </div>
+          </GlassSurface>
 
           {/* --- 4-5. Preuves chiffrees ---------------------------------- */}
           <div className="bento-tile bento-tile-interactive flex flex-col justify-center gap-1 p-5">

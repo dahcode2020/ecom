@@ -90,15 +90,26 @@ npm run dev                    # developpement (HMR)
 
 | Route | Rendu | Cache verifie en production | Spec |
 |---|---|---|---|
-| `/` | Statique / ISR | `s-maxage=60, stale-while-revalidate` + `x-nextjs-cache: HIT` | `pages/landing.md` |
-| `/checkout` | Dynamique | `no-store, max-age=0, must-revalidate` + `Pragma: no-cache` | `pages/checkout.md` |
+| `/` | Statique / ISR 60 s | `s-maxage=60, stale-while-revalidate=31535940` + `x-nextjs-cache: HIT` | `pages/landing.md` |
+| `/catalogue` | Dynamique | `public, s-maxage=60, stale-while-revalidate=300` | (overrides) |
+| `/checkout` | Dynamique | `no-store, max-age=0, must-revalidate` | `pages/checkout.md` |
+| `/suivi` | Dynamique | `no-store, max-age=0, must-revalidate` | (overrides) |
 
-Les deux routes ont des politiques de cache **opposees**, mesurees via `curl -D -`.
-`next.config.ts` pose le `no-store` sur `/checkout` : l'App Router ne permet pas d'emettre des
-en-tetes de reponse depuis une page.
+Trois politiques de cache **opposees**, mesurees via `curl -D -` sur le serveur de production.
+`next.config.ts` pose ces en-tetes : l'App Router ne permet pas d'emettre des en-tetes de reponse
+depuis une page. Le cas de `/catalogue` est le piege : Next applique `private, no-store` a toute
+route lisant `searchParams`, il fallait donc un en-tete `public` explicite — mais jamais sur une
+reponse personnalisee (`/checkout`, `/suivi` restent en `no-store`).
 
-Build : `/` 4,84 Ko de JS de page (116 Ko First Load), `/checkout` 8,63 Ko (120 Ko First Load),
-socle Next.js 103 Ko. Polices : 4 woff2 latin/latin-ext telecharges pour du francais, 113 732 o.
+Build (mesure apres le passage en bento + Liquid Glass) : `/` 8,16 Ko de JS de page (**124 Ko**
+First Load), `/catalogue` 2,16 Ko (117 Ko), `/checkout` 6,39 Ko (122 Ko), `/suivi` 2,67 Ko (114 Ko),
+socle Next.js 103 Ko. **Budget de `pages/landing.md` : 130 Ko First Load — respecte a 124 Ko.**
+Transfere en gzip : landing 30 421 o, catalogue 37 039 o, suivi 13 725 o, CSS **9 141 o**.
+Polices : 4 woff2 latin/latin-ext telecharges pour du francais, 113 732 o.
+
+`liquid-glass-react` (32,3 Ko gzip) est charge **en chunk lazy apres l'hydratation**, jamais dans le
+First Load : l'inclure au chunk partage aurait porte la landing a ~157 Ko, soit 21 % de depassement
+du budget. Verifie par l'absence du chunk dans le HTML prerendu.
 
 > ⚠️ **`npm run dev` peut renvoyer un 500 sur `/`** avec Next 15.5.29 : apres recompilation HMR le
 > dev server echoue sur `segment-explorer-node.js` (« Could not find the module … in the React

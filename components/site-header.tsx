@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Icon } from './icon';
 import { ThemeToggle } from './theme-toggle';
+import { GlassSurface } from './glass-surface';
 import { formatNumber } from '@/lib/format';
 import { SUPPORT_WHATSAPP } from '@/lib/contact';
 
@@ -29,7 +30,12 @@ export function SiteHeader({
   const isCheckout = variant === 'checkout';
 
   return (
-    <header className="bg-card/95 border-border sticky top-0 z-40 border-b backdrop-blur-sm">
+    // `.glass-chrome` et non le composant React : une barre pleine largeur
+        // toujours visible serait recomposee a chaque image du scroll si elle
+        // portait un `feDisplacementMap`. Voir le commentaire de la classe dans
+        // globals.css. La teinte y est calculee pour garantir >= 4.5:1 quel que
+        // soit le contenu qui defile dessous.
+        <header className="glass-chrome sticky top-0 z-40">
       <div
         className={`mx-auto flex min-h-16 items-center gap-3 px-4 sm:px-6 ${
           isCheckout ? 'max-w-[1040px]' : 'max-w-[1200px]'
@@ -135,14 +141,32 @@ export function SiteHeader({
  */
 export function MobileCtaBar({ label, amount }: { label: string; amount?: string }) {
   return (
-    <div className="bg-card border-border fixed inset-x-0 bottom-0 z-40 border-t p-3 md:hidden">
-      <Link href="/checkout" className="btn-primary w-full">
-        <span className="flex-1 text-left">
-          <span className="block text-xs font-medium opacity-90">{label}</span>
-          {amount && <span className="block text-base font-bold">{amount}</span>}
-        </span>
-        <Icon name="arrowRight" className="h-5 w-5" />
-      </Link>
+    // Barre flottante = « app chrome » au sens de la fiche Liquid Glass
+    // (« navigation, controls, system-aligned app chrome »). C'est l'un des deux
+    // usages ou le composant React est justifie : l'element est contenu et
+    // flotte au-dessus du contenu qui defile.
+    //
+    // Le conteneur fixe reste HORS du verre : `position: fixed` et le composant
+    // de verre ne font pas bon menage (la librairie mesure sa taille via
+    // getBoundingClientRect et applique ses propres transform/scale au survol).
+    <div className="fixed inset-x-0 bottom-0 z-40 p-3 md:hidden">
+      <GlassSurface
+        // Repli solide : `bg-card` + bordure + ombre de calque flottant.
+        // En mode verre, le `backgroundColor: var(--glass-tint)` pose en style
+        // inline par GlassSurface prend le pas sur `bg-card` — c'est voulu, et
+        // c'est cette teinte qui garantit le contraste (calculee, voir globals.css).
+        fallbackClassName="bg-card border-border overlay rounded-2xl border p-2"
+        cornerRadius={20}
+        overLight
+      >
+        <Link href="/checkout" className="btn-primary w-full">
+          <span className="flex-1 text-left">
+            <span className="block text-xs font-medium opacity-90">{label}</span>
+            {amount && <span className="block text-base font-bold">{amount}</span>}
+          </span>
+          <Icon name="arrowRight" className="h-5 w-5" />
+        </Link>
+      </GlassSurface>
     </div>
   );
 }

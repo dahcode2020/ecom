@@ -375,6 +375,89 @@ Les ombres restent autorisees uniquement sur les calques flottants (modales, dro
 
 ---
 
+## Liquid Glass — matériau réservé au chrome (amendement)
+
+Style ajouté à la demande, encadré par sa fiche dans `styles.csv` (`Liquid Glass`, Type
+Platform/Material, `Complexity: High`). La librairie [`liquid-glass-react`](https://github.com/rdev/liquid-glass-react)
+v1.1.1 fournit l'effet ; la fiche fournit les limites.
+
+### Périmètre — règle non négociable
+
+La fiche est explicite : **Best For** « Apple-platform navigation, controls, and system-aligned app
+chrome », **Do Not Use For** « content layers, dense reading surfaces, or custom effects without
+accessibility fallbacks ».
+
+| Surface | Verre ? | Motif |
+|---|---|---|
+| En-tête collant | ✅ `.glass-chrome` (CSS seule) | chrome de navigation |
+| Barre CTA mobile | ✅ `<GlassSurface>` | app chrome flottant |
+| Panneau de vérification de zone | ✅ `<GlassSurface>` | contrôles |
+| Grille catalogue (30 tuiles) | ❌ | dense reading surface |
+| Tuiles produit, étapes de `/suivi` | ❌ | content layers / lecture |
+| Champs `.input` | ❌ | un champ translucide rend curseur et texte imprévisibles |
+| `/checkout` | ❌ | entonnoir de conversion : bruit sans bénéfice |
+
+### Tokens
+
+```css
+--glass-tint:   rgb(255 255 255 / 0.78);  /* :root  — sombre : rgb(18 36 26 / 0.78) */
+--glass-border: rgb(255 255 255 / 0.45);  /* :root  — sombre : rgb(232 245 236 / 0.22) */
+--glass-blur:   8px;
+```
+
+**`--glass-tint` n'est pas décoratif : sa valeur est calculée.** Le verre seul laisse voir le fond,
+donc il ne garantit aucun contraste. Mesure du texte `--foreground` sur une teinte blanche posée sur
+le verre, pour chacun des cinq fonds réellement possibles sous une barre collante (hero inversé
+`#14532D`, fond sombre, photo voilée, background, card) :
+
+- **alpha 0.00 (verre pur) → pire cas 1.00:1** : le texte est **invisible** au-dessus du hero inversé ;
+- 0.65 → 4.09:1 insuffisant ; **0.72 → 4.90:1 = plancher AA absolu** ; **0.78 → 5.66:1 = retenu** ;
+- en mode sombre, 0.78 → 7.41:1 (pire cas : la tuile inversée, claire en sombre).
+
+Ne jamais descendre sous **0.72**. La fiche Glassmorphism, plus permissive, suggère « translucent
+white 15-30 % » : **inapplicable ici**, ces alpha donnent un pire cas très inférieur à 4,5:1 sur nos
+fonds sombres. C'est la mise en œuvre de « Keep content on a separate layer » : le contenu repose sur
+la teinte, pas sur le verre.
+
+### Les quatre garde-fous exigés par la checklist du style
+
+`requires: contrast-text-4.5, keyboard, visible-focus, reduced-motion` + « Test reduced transparency ».
+
+1. **Ne jamais rendre la librairie côté serveur.** Elle lit `navigator.userAgent` directement dans le
+   corps du rendu (`src/index.tsx:180`), sans garde : `ReferenceError` en SSR. Elle est chargée par
+   `import()` dans un `useEffect` uniquement, via `components/glass-surface.tsx` (qui porte aussi le
+   `'use client'` absent du paquet publié). Le HTML servi est donc le repli solide : aucun filtre SVG
+   au premier paint, et `capability: null` au premier rendu des deux côtés ⇒ pas d'erreur d'hydratation.
+2. **Budget JS.** La librairie pèse 34 454 o gzip. Dans le chunk partagé, la landing passerait de
+   123 à ~157 Ko, soit 21 % au-dessus du budget de 130 Ko. En chunk lazy : **First Load 124 Ko**,
+   chunk verre 32,3 Ko gzip, absent du HTML prérendu. `next/dynamic` est écarté (son état `loading`
+   ferait disparaître le contenu une frame).
+3. **`prefers-reduced-transparency: reduce`** — distinct de `prefers-reduced-motion`, et le motif
+   principal d'échec d'accessibilité du glassmorphism : coupe le flou, repasse en `var(--card)` plein.
+   `prefers-reduced-motion: reduce` met `elasticity` à `0`.
+4. **Repli sans `backdrop-filter`** — `@supports not (…)` en CSS et `CSS.supports()` en JS : surface
+   pleine, jamais du texte sur un fond non flouté au contraste non garanti.
+
+### Pourquoi l'en-tête est en CSS seule et non avec la librairie
+
+La librairie ajoute `feDisplacementMap` + `feColorMatrix`. Sur une barre pleine largeur **permanente**,
+ces filtres sont recomposés à chaque image pendant le scroll — le `cost:moderate | drivers: blur` que
+la fiche signale. Elle rend de plus en `display:inline-flex`, incompatible avec une barre pleine
+largeur. Enfin son propre README avertit que « Safari and Firefox only partially support the effect
+(displacement will not be visible) » : sur ces navigateurs les deux approches se ressemblent, donc le
+déplacement ne vaut pas son coût sur une grande surface. Il est réservé aux éléments contenus et
+flottants, où le lensing d'Apple a du sens.
+
+Paramètres retenus (volontairement modestes, cible 3G/4G et appareils d'entrée de gamme) :
+`blurAmount 0.08` (→ 6,6 px réels), `saturation 150`, `displacementScale 64`, `aberrationIntensity 1`
+(« Apply color judiciously »), `elasticity 0.2`, `mode: "standard"` (jamais `"shader"`, qui génère une
+carte de déplacement au runtime).
+
+> Détail de l'intégration, tableaux de contraste complets et coûts mesurés : `pages/landing.md`,
+> section « AMENDEMENT — matériau Liquid Glass ».
+
+---
+
 ## Contraintes locales — marche beninois
 
 Le skill ne couvre pas ce contexte. Ces regles s'ajoutent au Master et **ne sont pas negociables**

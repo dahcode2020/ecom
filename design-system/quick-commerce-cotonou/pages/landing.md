@@ -544,3 +544,120 @@ fond sombre — le même défaut que `color-scheme` corrigeait pour les contrôl
 rayon deux fois (`Categories()` et `CategorySections()`), donc un id dérivé du nom serait dupliqué
 et `aria-labelledby` résoudrait vers le premier. `useId` aurait réglé le cas mais sa disponibilité
 en Server Component n'est pas garantie ; `aria-label` est déterministe.
+
+---
+
+## AMENDEMENT — matériau « Liquid Glass » (chrome uniquement)
+
+Demande : « se servir de ce skill et rendre le style liquid glass au site », avec la librairie
+[`rdev/liquid-glass-react`](https://github.com/rdev/liquid-glass-react). Les deux ont été
+utilisés : la librairie pour l'effet, et la fiche `Liquid Glass` de `styles.csv` pour en borner
+l'usage.
+
+### Ce que la fiche du style impose — et ce qu'elle interdit
+
+| Rubrique de `styles.csv` | Valeur | Conséquence ici |
+|---|---|---|
+| Best For | « Apple-platform **navigation, controls**, and system-aligned **app chrome** » | Le verre va sur l'en-tête, la barre CTA mobile, le panneau de vérification de zone |
+| **Do Not Use For** | « **content layers, dense reading surfaces**, or custom effects without accessibility fallbacks » | **Exclut** la grille de 30 tuiles du catalogue, les tuiles produit, les étapes de `/suivi`, les champs de saisie |
+| Performance | `cost:moderate \| drivers: animation, blur` | Le verre n'est pas gratuit : d'où le chunk lazy et le refus du `feDisplacementMap` sur une barre pleine largeur |
+| Accessibility | `risk:conditional \| requires: contrast-text-4.5, keyboard, visible-focus, reduced-motion` | Quatre garde-fous implémentés, dont `prefers-reduced-transparency` |
+| Checklist | « Keep content on a separate layer », « Apply color judiciously », « Test reduced transparency » | La teinte `--glass-tint` **est** cette couche séparée ; aberration chromatique à 1 |
+
+### Le piège central : le verre seul ne garantit aucun contraste
+
+Un fond translucide laisse voir ce qui est dessous. Le texte de l'en-tête survole, au scroll, la
+tuile inversée du hero (`#14532D`), des photos voilées et le fond clair. Mesure du texte
+`--foreground` sur une teinte blanche posée sur le verre, pour **chacun** de ces fonds :
+
+| alpha de la teinte | pire cas (5 fonds) | verdict |
+|---|---|---|
+| **0.00 — verre pur** | **1.00:1** | texte **invisible** au-dessus du hero inversé |
+| 0.55 | 3.09:1 | insuffisant |
+| 0.65 | 4.09:1 | insuffisant |
+| **0.72** | **4.90:1** | AA — **plancher absolu** |
+| **0.78** | **5.66:1** | AA confortable — **RETENU** |
+| 0.85 | 6.65:1 | AA |
+
+En mode sombre (texte `#E8F5EC`, teinte `#12241A`) : 0.72 → 6.09:1, **0.78 → 7.41:1**, le pire cas
+étant là encore la tuile inversée, claire en sombre. `0.78` est donc retenu dans les deux modes.
+**Ne jamais descendre sous 0.72** : le 4,5:1 casse dès qu'un fond sombre passe sous la barre.
+
+C'est la mise en œuvre de « Keep content on a separate layer » : le contenu repose sur cette
+teinte, pas sur le verre. La fiche Glassmorphism, plus permissive, propose « translucent white
+15-30 % » — **inapplicable ici**, car 15-30 % donne un pire cas très inférieur à 4,5:1 sur nos
+fonds sombres. La référence utile est le calcul du voile sur image : 0.72 y était déjà le plancher.
+
+### Deux implémentations, selon la taille de la surface
+
+**`.glass-chrome` (CSS seule)** — en-tête collant, donc grande surface **permanente** :
+`backdrop-filter: blur(8px) saturate(160%)` + `-webkit-backdrop-filter` (obligatoire pour Safari).
+La librairie ajoute un `feDisplacementMap` et un `feColorMatrix` ; sur une barre pleine largeur
+toujours visible, ces filtres SVG sont recomposés **à chaque image pendant le scroll** — exactement
+le `cost:moderate | drivers: blur` que la fiche signale. De plus la librairie rend en
+`display:inline-flex`, ce qui se bat avec une barre pleine largeur. Enfin, son propre README
+avertit que « Safari and Firefox only partially support the effect (displacement will not be
+visible) » : sur ces navigateurs les deux approches se ressemblent, donc le déplacement ne vaut pas
+son coût sur une grande surface.
+
+**`<GlassSurface>` (librairie React)** — barre CTA mobile et panneau de vérification de zone, deux
+éléments **contenus et flottants**, au-dessus de contenu qui défile : là, le lensing et le
+« liquid feel » d'Apple ont du sens. Paramètres volontairement modestes (`blurAmount 0.08` → 6,6 px
+réels, `saturation 150`, `aberrationIntensity 1`, `elasticity 0.2`, `mode standard` et non `shader`
+qui génère une carte de déplacement au runtime).
+
+### Les quatre garde-fous (checklist du style)
+
+1. **Crash SSR évité.** La librairie lit `navigator.userAgent` **directement dans le corps du
+   rendu** (`src/index.tsx:180`, `const isFirefox = …`), sans garde `typeof navigator` ni
+   `useEffect`. Rendue côté serveur par l'App Router, elle lèverait `ReferenceError: navigator is
+   not defined`. Elle n'est donc **jamais importée au niveau module** : seul un `import()` dans un
+   `useEffect` la charge. Le paquet publié ne porte d'ailleurs **aucune directive `'use client'`**
+   (vérifié sur `dist/index.esm.js`) — `components/glass-surface.tsx` la porte.
+2. **Budget JS.** `dist/index.esm.js` pèse **34 454 o gzip** (62 Ko brut). Le budget First Load est
+   de 130 Ko et la landing était à 123 Ko : l'importer dans le chunk partagé l'aurait portée à
+   ~157 Ko, soit **21 % de dépassement**. Mesuré après intégration : **124 Ko First Load**, chunk
+   verre **32,3 Ko gzip** chargé après l'hydratation, **absent du HTML prérendu** (0 occurrence
+   parmi les 8 chunks référencés). Il n'est téléchargé que si le verre est réellement applicable.
+3. **`prefers-reduced-transparency: reduce`** — distinct de `prefers-reduced-motion` et trop souvent
+   oublié : c'est le motif principal d'échec d'accessibilité du glassmorphism. Il désactive le flou
+   et repasse en surface pleine `var(--card)`. `prefers-reduced-motion: reduce` met `elasticity` à
+   `0` : le matériau reste, seule la déformation au survol disparaît.
+4. **Repli sans `backdrop-filter`** — `@supports not (…)` en CSS, et `CSS.supports()` côté JS :
+   un navigateur ancien obtient une surface pleine, jamais du texte sur un fond non flouté au
+   contraste non garanti. `color-mix()` reste proscrit (mêmes raisons que pour le bento).
+
+`next/dynamic` n'est **pas** utilisé, volontairement : son état `loading` rendrait `null` le temps
+de charger le chunk, donc le contenu disparaîtrait une frame. Ici les enfants sont rendus en
+permanence, dans l'une **ou** l'autre branche, jamais en double (pas d'`id` ni d'ARIA dupliqués —
+le piège déjà rencontré avec `aria-labelledby`).
+
+### Rendu serveur = repli solide, toujours
+
+Le HTML servi ne contient **aucun** filtre SVG de la librairie : le premier paint est le repli
+solide, puis le verre s'applique après détection. `capability` est `null` au premier rendu, côté
+serveur comme client, donc **le HTML est identique et il n'y a aucune erreur d'hydratation**. Le
+contenu ne dépend jamais de la réussite de l'`import()` : un échec réseau laisse le repli solide.
+
+### Ce qui n'a PAS été mis en verre (décision assumée)
+
+La grille du catalogue (30 tuiles), les tuiles produit, les étapes et le schéma de `/suivi`, les
+champs `.input` (un champ translucide rend curseur et texte imprévisibles), et `/checkout`
+(entonnoir de conversion : le matériau y ajouterait du bruit sans rien servir). Toutes ces surfaces
+sont des *content layers* ou des *dense reading surfaces* — explicitement dans la colonne
+« Do Not Use For » de la fiche.
+
+### Coût mesuré de l'amendement
+
+| Mesure | Avant | Après | Δ |
+|---|---|---|---|
+| First Load JS `/` | 123 Ko | **124 Ko** | +1 Ko (budget 130 Ko) |
+| CSS brute | 41 460 o | 42 023 o | +563 o |
+| CSS **gzip** | 8 992 o | **9 141 o** | **+149 o** |
+| Landing gzip | 30 368 o | 30 421 o | +53 o |
+| Chunk verre (lazy) | — | **32,3 Ko gzip** | hors First Load |
+
+Audit de conformité : **57/57** (`/tmp/audit5.py` — crash SSR, repli solide au premier paint,
+valeurs des tokens vérifiées numériquement, les deux replis d'accessibilité, périmètre contenu vs
+chrome, non-régression bento). L'audit cumulé du bento reste à **86/92**, avec les mêmes 6 faux
+négatifs connus du script (minification, `data-reveal="true"`, `srcSet` en camelCase, images `fill`).
